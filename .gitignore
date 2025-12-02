@@ -35,3 +35,6 @@ coverage/
 # Cache
 .cache/
 *.tsbuildinfo
+/.turbo/
+
+.claude/settings.local.json
