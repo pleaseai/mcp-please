@@ -1,7 +1,7 @@
 {
   "name": "@pleaseai/mcp",
   "type": "module",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.1-beta.1",
   "description": "MCP server and CLI for tool search",
   "exports": {
     ".": {

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1-beta.1](https://github.com/pleaseai/mcp-please/compare/mcp-v0.2.0-beta.1...mcp-v0.2.1-beta.1) (2025-12-02)
+
+
+### Bug Fixes
+
+* **ci:** use bun publish for workspace protocol resolution ([62952ef](https://github.com/pleaseai/mcp-please/commit/62952ef0ed76391d5f2bc07e1e9ec6397aeeb74b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/mcp-core bumped to 0.1.2-beta.1
+
 ## [0.2.0-beta.1](https://github.com/pleaseai/mcp-please/compare/mcp-v0.1.0-beta.1...mcp-v0.2.0-beta.1) (2025-12-02)
 
 
