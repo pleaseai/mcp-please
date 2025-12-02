@@ -21,7 +21,11 @@ export function createSearchCommand(): Command {
     .option('-t, --threshold <number>', 'Minimum score threshold (0-1)', '0')
     .option('-i, --index <path>', 'Path to index file', './data/index.json')
     .option('-f, --format <format>', 'Output format: table | json | minimal', 'table')
-    .option('-p, --provider <type>', 'Embedding provider for semantic search: local | openai | voyage', 'local')
+    .option(
+      '-p, --provider <type>',
+      'Embedding provider for semantic search: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
+      'local:minilm'
+    )
     .action(async (query: string, options) => {
       const spinner = ora('Loading index...').start();
 

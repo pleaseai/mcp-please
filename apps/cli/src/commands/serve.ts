@@ -14,7 +14,11 @@ export function createServeCommand(): Command {
     .option('-p, --port <number>', 'HTTP port (only for http transport)', '3000')
     .option('-i, --index <path>', 'Path to index file', './data/index.json')
     .option('-m, --mode <mode>', 'Default search mode: regex | bm25 | embedding', 'bm25')
-    .option('--provider <type>', 'Embedding provider: local | openai | voyage', 'local')
+    .option(
+      '--provider <type>',
+      'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
+      'local:minilm'
+    )
     .action(async (options) => {
       const spinner = ora('Starting MCP server...').start();
 

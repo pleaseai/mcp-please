@@ -17,7 +17,8 @@ export type { SearchStrategy } from './search/strategy.js';
 // Embedding providers
 export {
   EmbeddingProviderRegistry,
-  LocalEmbeddingProvider,
+  MiniLMEmbeddingProvider,
+  MDBRLeafEmbeddingProvider,
   OpenAIEmbeddingProvider,
   VoyageAIEmbeddingProvider,
   createEmbeddingProvider,

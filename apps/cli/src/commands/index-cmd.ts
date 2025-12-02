@@ -15,7 +15,11 @@ export function createIndexCommand(): Command {
     .description('Build search index from tool definitions')
     .argument('<sources...>', 'Paths to JSON/YAML files or directories')
     .option('-o, --output <path>', 'Output path for index file', './data/index.json')
-    .option('-p, --provider <type>', 'Embedding provider: local | openai | voyage', 'local')
+    .option(
+      '-p, --provider <type>',
+      'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
+      'local:minilm'
+    )
     .option('-m, --model <name>', 'Embedding model name')
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')

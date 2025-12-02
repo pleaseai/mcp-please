@@ -1,6 +1,6 @@
 {
   "name": "@pleaseai/mcp-cli",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "CLI for MCP tool search",
   "type": "module",
   "main": "dist/index.js",
@@ -11,6 +11,7 @@
     "build": "tsc",
     "dev": "bun --watch src/index.ts",
     "start": "bun dist/index.js",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

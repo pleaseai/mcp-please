@@ -4,11 +4,15 @@ import type { EmbeddingProvider } from '../provider.js';
 type Pipeline = Awaited<ReturnType<typeof import('@huggingface/transformers').pipeline>>;
 
 /**
- * Local embedding provider using transformers.js
+ * MiniLM embedding provider using transformers.js
  * Uses all-MiniLM-L6-v2 model (384 dimensions)
+ *
+ * General-purpose embedding model suitable for various NLP tasks.
+ *
+ * @see https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
  */
-export class LocalEmbeddingProvider implements EmbeddingProvider {
-  readonly name = 'local';
+export class MiniLMEmbeddingProvider implements EmbeddingProvider {
+  readonly name = 'local:minilm';
   readonly dimensions = 384;
 
   private extractor: Pipeline | null = null;

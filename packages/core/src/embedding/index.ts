@@ -1,11 +1,13 @@
 import type { EmbeddingProvider } from './provider.js';
 import type { EmbeddingProviderConfig, EmbeddingProviderType } from '../types/index.js';
-import { LocalEmbeddingProvider } from './providers/local.js';
+import { MiniLMEmbeddingProvider } from './providers/minilm.js';
+import { MDBRLeafEmbeddingProvider } from './providers/mdbr-leaf.js';
 import { OpenAIEmbeddingProvider } from './providers/openai.js';
 import { VoyageAIEmbeddingProvider } from './providers/voyage.js';
 
 export { type EmbeddingProvider } from './provider.js';
-export { LocalEmbeddingProvider } from './providers/local.js';
+export { MiniLMEmbeddingProvider } from './providers/minilm.js';
+export { MDBRLeafEmbeddingProvider } from './providers/mdbr-leaf.js';
 export { OpenAIEmbeddingProvider } from './providers/openai.js';
 export { VoyageAIEmbeddingProvider } from './providers/voyage.js';
 
@@ -41,12 +43,15 @@ export class EmbeddingProviderRegistry {
       return customFactory(config);
     }
 
-    // Built-in providers
+    // Built-in providers (format: 'location:model')
     switch (config.type) {
-      case 'local':
-        return new LocalEmbeddingProvider(config.model);
+      case 'local:minilm':
+        return new MiniLMEmbeddingProvider(config.model);
 
-      case 'openai':
+      case 'local:mdbr-leaf':
+        return new MDBRLeafEmbeddingProvider(config.model, config.dimensions);
+
+      case 'api:openai':
         return new OpenAIEmbeddingProvider({
           model: config.model,
           apiKey: config.apiKey,
@@ -54,7 +59,7 @@ export class EmbeddingProviderRegistry {
           dimensions: config.dimensions,
         });
 
-      case 'voyage':
+      case 'api:voyage':
         return new VoyageAIEmbeddingProvider({
           model: config.model,
           apiKey: config.apiKey,
@@ -63,7 +68,10 @@ export class EmbeddingProviderRegistry {
         });
 
       default:
-        throw new Error(`Unknown embedding provider type: ${config.type}`);
+        throw new Error(
+          `Unknown embedding provider type: ${config.type}. ` +
+            `Available types: ${this.getAvailableTypes().join(', ')}`
+        );
     }
   }
 
@@ -71,7 +79,12 @@ export class EmbeddingProviderRegistry {
    * Get available provider types
    */
   getAvailableTypes(): string[] {
-    const builtIn: EmbeddingProviderType[] = ['local', 'openai', 'voyage'];
+    const builtIn: EmbeddingProviderType[] = [
+      'local:minilm',
+      'local:mdbr-leaf',
+      'api:openai',
+      'api:voyage',
+    ];
     const custom = Array.from(this.customProviders.keys());
     return [...builtIn, ...custom];
   }
