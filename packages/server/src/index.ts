@@ -1,51 +1,51 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod/v3';
+import type { EmbeddingProvider, PersistedIndex, SearchMode, ServerConfig } from '@pleaseai/mcp-core'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
-  IndexManager,
-  SearchOrchestrator,
   createEmbeddingProvider,
-  type EmbeddingProvider,
-  type ServerConfig,
-  type SearchMode,
-  type PersistedIndex,
-} from '@pleaseai/mcp-core';
+
+  IndexManager,
+
+  SearchOrchestrator,
+
+} from '@pleaseai/mcp-core'
+import { z } from 'zod/v3'
 
 /**
  * MCP Tool Search Server
  * Exposes tool_search capability via MCP protocol
  */
 export class McpToolSearchServer {
-  private server: McpServer;
-  private config: ServerConfig;
-  private indexManager: IndexManager;
-  private searchOrchestrator: SearchOrchestrator;
-  private embeddingProvider?: EmbeddingProvider;
-  private cachedIndex?: PersistedIndex;
+  private server: McpServer
+  private config: ServerConfig
+  private indexManager: IndexManager
+  private searchOrchestrator: SearchOrchestrator
+  private embeddingProvider?: EmbeddingProvider
+  private cachedIndex?: PersistedIndex
 
   constructor(config: ServerConfig) {
-    this.config = config;
-    this.indexManager = new IndexManager();
+    this.config = config
+    this.indexManager = new IndexManager()
     this.searchOrchestrator = new SearchOrchestrator({
       defaultMode: config.defaultMode,
       defaultTopK: 10,
-    });
+    })
 
     this.server = new McpServer({
       name: 'mcp-tool-search',
       version: '1.0.0',
-    });
+    })
 
-    this.registerTools();
+    this.registerTools()
   }
 
   /**
    * Set embedding provider for semantic search
    */
   setEmbeddingProvider(provider: EmbeddingProvider): void {
-    this.embeddingProvider = provider;
-    this.searchOrchestrator.setEmbeddingProvider(provider);
-    this.indexManager.setEmbeddingProvider(provider);
+    this.embeddingProvider = provider
+    this.searchOrchestrator.setEmbeddingProvider(provider)
+    this.indexManager.setEmbeddingProvider(provider)
   }
 
   /**
@@ -79,13 +79,13 @@ export class McpToolSearchServer {
         try {
           // Load index if not cached
           if (!this.cachedIndex) {
-            this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath);
-            this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats);
+            this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+            this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats)
           }
 
           // Initialize embedding provider for semantic search
           if (mode === 'embedding' && this.embeddingProvider) {
-            await this.embeddingProvider.initialize();
+            await this.embeddingProvider.initialize()
           }
 
           // Perform search
@@ -96,8 +96,8 @@ export class McpToolSearchServer {
               topK: top_k,
               threshold: threshold > 0 ? threshold : undefined,
             },
-            this.cachedIndex.tools
-          );
+            this.cachedIndex.tools,
+          )
 
           return {
             content: [
@@ -110,13 +110,14 @@ export class McpToolSearchServer {
                     searchTimeMs: result.searchTimeMs,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
-          };
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          }
+        }
+        catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
           return {
             content: [
               {
@@ -125,10 +126,10 @@ export class McpToolSearchServer {
               },
             ],
             isError: true,
-          };
+          }
         }
-      }
-    );
+      },
+    )
 
     // Index info tool
     this.server.registerTool(
@@ -140,7 +141,7 @@ export class McpToolSearchServer {
       },
       async () => {
         try {
-          const metadata = await this.indexManager.getIndexMetadata(this.config.indexPath);
+          const metadata = await this.indexManager.getIndexMetadata(this.config.indexPath)
 
           return {
             content: [
@@ -153,13 +154,14 @@ export class McpToolSearchServer {
                     availableModes: ['regex', 'bm25', ...(metadata.hasEmbeddings ? ['embedding'] : [])],
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
-          };
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          }
+        }
+        catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
           return {
             content: [
               {
@@ -168,10 +170,10 @@ export class McpToolSearchServer {
               },
             ],
             isError: true,
-          };
+          }
         }
-      }
-    );
+      },
+    )
 
     // List tools tool
     this.server.registerTool(
@@ -187,14 +189,14 @@ export class McpToolSearchServer {
       async ({ limit, offset }) => {
         try {
           if (!this.cachedIndex) {
-            this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath);
+            this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
           }
 
-          const tools = this.cachedIndex.tools.slice(offset, offset + limit).map((t) => ({
+          const tools = this.cachedIndex.tools.slice(offset, offset + limit).map(t => ({
             name: t.tool.name,
             title: t.tool.title,
             description: t.tool.description,
-          }));
+          }))
 
           return {
             content: [
@@ -208,13 +210,14 @@ export class McpToolSearchServer {
                     offset,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
-          };
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
+          }
+        }
+        catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
           return {
             content: [
               {
@@ -223,10 +226,10 @@ export class McpToolSearchServer {
               },
             ],
             isError: true,
-          };
+          }
         }
-      }
-    );
+      },
+    )
   }
 
   /**
@@ -235,24 +238,26 @@ export class McpToolSearchServer {
   async start(transport: 'stdio' | 'http' = 'stdio'): Promise<void> {
     // Initialize embedding provider if configured
     if (this.config.embeddingProvider) {
-      this.embeddingProvider = createEmbeddingProvider(this.config.embeddingProvider);
-      this.searchOrchestrator.setEmbeddingProvider(this.embeddingProvider);
+      this.embeddingProvider = createEmbeddingProvider(this.config.embeddingProvider)
+      this.searchOrchestrator.setEmbeddingProvider(this.embeddingProvider)
     }
 
     // Pre-load index
     try {
-      this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath);
-      this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats);
-    } catch {
+      this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+      this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats)
+    }
+    catch {
       // Index will be loaded on first request
     }
 
     if (transport === 'stdio') {
-      const stdioTransport = new StdioServerTransport();
-      await this.server.connect(stdioTransport);
-    } else {
+      const stdioTransport = new StdioServerTransport()
+      await this.server.connect(stdioTransport)
+    }
+    else {
       // HTTP transport not implemented in this version
-      throw new Error('HTTP transport not yet implemented');
+      throw new Error('HTTP transport not yet implemented')
     }
   }
 
@@ -260,7 +265,7 @@ export class McpToolSearchServer {
    * Stop the server
    */
   async stop(): Promise<void> {
-    await this.searchOrchestrator.dispose();
-    await this.server.close();
+    await this.searchOrchestrator.dispose()
+    await this.server.close()
   }
 }

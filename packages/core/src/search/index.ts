@@ -1,93 +1,94 @@
-import type { SearchMode, SearchQuery, SearchResult, IndexedTool, SearchOptions } from '../types/index.js';
-import type { SearchStrategy } from './strategy.js';
-import type { EmbeddingProvider } from '../embedding/provider.js';
-import type { BM25Stats } from '../index/storage.js';
-import { RegexSearchStrategy } from './strategies/regex.js';
-import { BM25SearchStrategy } from './strategies/bm25.js';
-import { EmbeddingSearchStrategy } from './strategies/embedding.js';
+import type { EmbeddingProvider } from '../embedding/provider.js'
+import type { BM25Stats } from '../index/storage.js'
+import type { IndexedTool, SearchMode, SearchOptions, SearchQuery, SearchResult } from '../types/index.js'
+import type { SearchStrategy } from './strategy.js'
+import { BM25SearchStrategy } from './strategies/bm25.js'
+import { EmbeddingSearchStrategy } from './strategies/embedding.js'
+import { RegexSearchStrategy } from './strategies/regex.js'
 
-export { type SearchStrategy } from './strategy.js';
-export { RegexSearchStrategy } from './strategies/regex.js';
-export { BM25SearchStrategy } from './strategies/bm25.js';
-export { EmbeddingSearchStrategy } from './strategies/embedding.js';
+export { BM25SearchStrategy } from './strategies/bm25.js'
+export { EmbeddingSearchStrategy } from './strategies/embedding.js'
+export { RegexSearchStrategy } from './strategies/regex.js'
+export { type SearchStrategy } from './strategy.js'
 
 /**
  * Search orchestrator options
  */
 export interface SearchOrchestratorOptions {
-  defaultMode?: SearchMode;
-  defaultTopK?: number;
-  embeddingProvider?: EmbeddingProvider;
+  defaultMode?: SearchMode
+  defaultTopK?: number
+  embeddingProvider?: EmbeddingProvider
 }
 
 /**
  * Orchestrates search operations using different strategies
  */
 export class SearchOrchestrator {
-  private strategies: Map<SearchMode, SearchStrategy>;
-  private defaultMode: SearchMode;
-  private defaultTopK: number;
-  private initialized = false;
+  private strategies: Map<SearchMode, SearchStrategy>
+  private defaultMode: SearchMode
+  private defaultTopK: number
+  private initialized = false
 
   constructor(options?: SearchOrchestratorOptions) {
-    this.defaultMode = options?.defaultMode ?? 'bm25';
-    this.defaultTopK = options?.defaultTopK ?? 10;
+    this.defaultMode = options?.defaultMode ?? 'bm25'
+    this.defaultTopK = options?.defaultTopK ?? 10
 
     // Initialize strategies
-    this.strategies = new Map();
-    this.strategies.set('regex', new RegexSearchStrategy());
-    this.strategies.set('bm25', new BM25SearchStrategy());
-    this.strategies.set('embedding', new EmbeddingSearchStrategy(options?.embeddingProvider));
+    this.strategies = new Map()
+    this.strategies.set('regex', new RegexSearchStrategy())
+    this.strategies.set('bm25', new BM25SearchStrategy())
+    this.strategies.set('embedding', new EmbeddingSearchStrategy(options?.embeddingProvider))
   }
 
   /**
    * Set embedding provider for semantic search
    */
   setEmbeddingProvider(provider: EmbeddingProvider): void {
-    const embeddingStrategy = this.strategies.get('embedding') as EmbeddingSearchStrategy;
-    embeddingStrategy.setEmbeddingProvider(provider);
+    const embeddingStrategy = this.strategies.get('embedding') as EmbeddingSearchStrategy
+    embeddingStrategy.setEmbeddingProvider(provider)
   }
 
   /**
    * Set BM25 statistics
    */
   setBM25Stats(stats: BM25Stats): void {
-    const bm25Strategy = this.strategies.get('bm25') as BM25SearchStrategy;
-    bm25Strategy.setStats(stats);
+    const bm25Strategy = this.strategies.get('bm25') as BM25SearchStrategy
+    bm25Strategy.setStats(stats)
   }
 
   /**
    * Initialize all strategies
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized)
+      return
 
     for (const strategy of this.strategies.values()) {
-      await strategy.initialize();
+      await strategy.initialize()
     }
 
-    this.initialized = true;
+    this.initialized = true
   }
 
   /**
    * Search indexed tools
    */
   async search(query: SearchQuery, indexedTools: IndexedTool[]): Promise<SearchResult> {
-    const mode = query.mode ?? this.defaultMode;
-    const strategy = this.strategies.get(mode);
+    const mode = query.mode ?? this.defaultMode
+    const strategy = this.strategies.get(mode)
 
     if (!strategy) {
-      throw new Error(`Unknown search mode: ${mode}`);
+      throw new Error(`Unknown search mode: ${mode}`)
     }
 
     const options: SearchOptions = {
       topK: query.topK ?? this.defaultTopK,
       threshold: query.threshold,
-    };
+    }
 
-    const startTime = performance.now();
-    const tools = await strategy.search(query.query, indexedTools, options);
-    const endTime = performance.now();
+    const startTime = performance.now()
+    const tools = await strategy.search(query.query, indexedTools, options)
+    const endTime = performance.now()
 
     return {
       tools,
@@ -95,7 +96,7 @@ export class SearchOrchestrator {
       mode,
       totalIndexed: indexedTools.length,
       searchTimeMs: Math.round(endTime - startTime),
-    };
+    }
   }
 
   /**
@@ -105,7 +106,7 @@ export class SearchOrchestrator {
     query: string,
     indexedTools: IndexedTool[],
     mode?: SearchMode,
-    topK?: number
+    topK?: number,
   ): Promise<SearchResult> {
     return this.search(
       {
@@ -113,15 +114,15 @@ export class SearchOrchestrator {
         mode: mode ?? this.defaultMode,
         topK: topK ?? this.defaultTopK,
       },
-      indexedTools
-    );
+      indexedTools,
+    )
   }
 
   /**
    * Get available search modes
    */
   getAvailableModes(): SearchMode[] {
-    return Array.from(this.strategies.keys());
+    return Array.from(this.strategies.keys())
   }
 
   /**
@@ -129,7 +130,7 @@ export class SearchOrchestrator {
    */
   hasEmbeddingSupport(): boolean {
     // Check if embedding strategy has a provider configured
-    return this.strategies.has('embedding');
+    return this.strategies.has('embedding')
   }
 
   /**
@@ -137,8 +138,8 @@ export class SearchOrchestrator {
    */
   async dispose(): Promise<void> {
     for (const strategy of this.strategies.values()) {
-      await strategy.dispose();
+      await strategy.dispose()
     }
-    this.initialized = false;
+    this.initialized = false
   }
 }

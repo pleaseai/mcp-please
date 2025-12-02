@@ -1,4 +1,4 @@
-import type { SearchMode } from './tool.js';
+import type { SearchMode } from './tool.js'
 
 /**
  * Embedding provider types
@@ -12,55 +12,55 @@ import type { SearchMode } from './tool.js';
  * - api:openai       - OpenAI Embeddings API
  * - api:voyage       - Voyage AI API
  */
-export type EmbeddingProviderType =
-  | 'local:minilm'
-  | 'local:mdbr-leaf'
-  | 'api:openai'
-  | 'api:voyage';
+export type EmbeddingProviderType
+  = | 'local:minilm'
+    | 'local:mdbr-leaf'
+    | 'api:openai'
+    | 'api:voyage'
 
 /**
  * Embedding provider configuration
  */
 export interface EmbeddingProviderConfig {
-  type: EmbeddingProviderType;
-  model?: string;
-  apiKey?: string;
-  apiBase?: string;
-  dimensions?: number;
-  options?: Record<string, unknown>;
+  type: EmbeddingProviderType
+  model?: string
+  apiKey?: string
+  apiBase?: string
+  dimensions?: number
+  options?: Record<string, unknown>
 }
 
 /**
  * Index configuration
  */
 export interface IndexConfig {
-  name: string;
-  toolSources: string[];
-  embeddingProvider?: EmbeddingProviderConfig;
-  outputPath: string;
+  name: string
+  toolSources: string[]
+  embeddingProvider?: EmbeddingProviderConfig
+  outputPath: string
 }
 
 /**
  * Server configuration
  */
 export interface ServerConfig {
-  transport: 'stdio' | 'http';
-  port?: number;
-  indexPath: string;
-  defaultMode: SearchMode;
-  embeddingProvider?: EmbeddingProviderConfig;
+  transport: 'stdio' | 'http'
+  port?: number
+  indexPath: string
+  defaultMode: SearchMode
+  embeddingProvider?: EmbeddingProviderConfig
 }
 
 /**
  * Application configuration
  */
 export interface AppConfig {
-  defaultSearchMode: SearchMode;
-  defaultTopK: number;
-  indexPath: string;
-  embeddingProvider: EmbeddingProviderConfig;
+  defaultSearchMode: SearchMode
+  defaultTopK: number
+  indexPath: string
+  embeddingProvider: EmbeddingProviderConfig
   server?: {
-    transport: 'stdio' | 'http';
-    port?: number;
-  };
+    transport: 'stdio' | 'http'
+    port?: number
+  }
 }

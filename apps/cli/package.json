@@ -1,8 +1,8 @@
 {
   "name": "@pleaseai/mcp-cli",
+  "type": "module",
   "version": "0.1.0",
   "description": "CLI for MCP tool search",
-  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "mcp-search": "dist/index.js"
@@ -13,6 +13,8 @@
     "start": "bun dist/index.js",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix --cache",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -21,10 +23,13 @@
     "chalk": "catalog:",
     "cli-table3": "catalog:",
     "commander": "catalog:",
-    "ora": "catalog:"
+    "ora": "catalog:",
+    "std-env": "^3.10.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.2.0",
     "@types/node": "catalog:",
+    "eslint": "^9.39.0",
     "tsup": "catalog:",
     "typescript": "catalog:"
   }

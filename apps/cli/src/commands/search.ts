@@ -1,13 +1,16 @@
-import { Command } from 'commander';
-import ora from 'ora';
+import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import type { OutputFormat } from '../utils/output.js'
+import process from 'node:process'
 import {
-  IndexManager,
-  SearchOrchestrator,
   createEmbeddingProvider,
-  type SearchMode,
-  type EmbeddingProviderType,
-} from '@pleaseai/mcp-core';
-import { formatSearchResults, error, type OutputFormat } from '../utils/output.js';
+
+  IndexManager,
+
+  SearchOrchestrator,
+} from '@pleaseai/mcp-core'
+import { Command } from 'commander'
+import ora from 'ora'
+import { error, formatSearchResults } from '../utils/output.js'
 
 /**
  * Create the search command
@@ -24,50 +27,50 @@ export function createSearchCommand(): Command {
     .option(
       '-p, --provider <type>',
       'Embedding provider for semantic search: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
-      'local:minilm'
+      'local:minilm',
     )
     .action(async (query: string, options) => {
-      const spinner = ora('Loading index...').start();
+      const spinner = ora('Loading index...').start()
 
       try {
-        const mode = options.mode as SearchMode;
-        const topK = parseInt(options.topK, 10);
-        const threshold = parseFloat(options.threshold);
-        const format = options.format as OutputFormat;
+        const mode = options.mode as SearchMode
+        const topK = Number.parseInt(options.topK, 10)
+        const threshold = Number.parseFloat(options.threshold)
+        const format = options.format as OutputFormat
 
         // Load index
-        const indexManager = new IndexManager();
-        const index = await indexManager.loadIndex(options.index);
+        const indexManager = new IndexManager()
+        const index = await indexManager.loadIndex(options.index)
 
         // Create search orchestrator
         const orchestrator = new SearchOrchestrator({
           defaultMode: mode,
           defaultTopK: topK,
-        });
+        })
 
         // Set BM25 stats
-        orchestrator.setBM25Stats(index.bm25Stats);
+        orchestrator.setBM25Stats(index.bm25Stats)
 
         // Setup embedding provider for semantic search
         if (mode === 'embedding') {
           if (!index.hasEmbeddings) {
-            spinner.fail('Index does not contain embeddings. Re-index with embeddings enabled.');
-            process.exit(1);
+            spinner.fail('Index does not contain embeddings. Re-index with embeddings enabled.')
+            process.exit(1)
           }
 
-          spinner.text = 'Initializing embedding provider...';
+          spinner.text = 'Initializing embedding provider...'
 
-          const providerType = options.provider as EmbeddingProviderType;
+          const providerType = options.provider as EmbeddingProviderType
           const provider = createEmbeddingProvider({
             type: providerType,
-          });
+          })
 
-          await provider.initialize();
-          orchestrator.setEmbeddingProvider(provider);
+          await provider.initialize()
+          orchestrator.setEmbeddingProvider(provider)
         }
 
         // Search
-        spinner.text = 'Searching...';
+        spinner.text = 'Searching...'
 
         const result = await orchestrator.search(
           {
@@ -76,22 +79,23 @@ export function createSearchCommand(): Command {
             topK,
             threshold: threshold > 0 ? threshold : undefined,
           },
-          index.tools
-        );
+          index.tools,
+        )
 
-        spinner.stop();
+        spinner.stop()
 
         // Output results
-        console.log(formatSearchResults(result, format));
+        console.log(formatSearchResults(result, format))
 
         // Cleanup
-        await orchestrator.dispose();
-      } catch (err) {
-        spinner.fail('Search failed');
-        error(err instanceof Error ? err.message : String(err));
-        process.exit(1);
+        await orchestrator.dispose()
       }
-    });
+      catch (err) {
+        spinner.fail('Search failed')
+        error(err instanceof Error ? err.message : String(err))
+        process.exit(1)
+      }
+    })
 
-  return cmd;
+  return cmd
 }

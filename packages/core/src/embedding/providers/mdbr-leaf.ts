@@ -1,8 +1,7 @@
-import type { EmbeddingProvider } from '../provider.js';
+import type { EmbeddingProvider } from '../provider.js'
 
 // Simplified type for transformers.js pipeline
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Pipeline = any;
+type Pipeline = any
 
 /**
  * MDBR-Leaf-IR embedding provider using transformers.js
@@ -18,67 +17,68 @@ type Pipeline = any;
  * @see https://huggingface.co/MongoDB/mdbr-leaf-ir
  */
 export class MDBRLeafEmbeddingProvider implements EmbeddingProvider {
-  readonly name = 'local:mdbr-leaf';
+  readonly name = 'local:mdbr-leaf'
 
-  private extractor: Pipeline | null = null;
-  private modelName: string;
-  private targetDimensions: number;
+  private extractor: Pipeline | null = null
+  private modelName: string
+  private targetDimensions: number
 
   /**
    * @param modelName - Model name (default: MongoDB/mdbr-leaf-ir)
    * @param dimensions - Target dimensions for MRL truncation (default: 256)
    */
   constructor(modelName?: string, dimensions?: number) {
-    this.modelName = modelName ?? 'MongoDB/mdbr-leaf-ir';
-    this.targetDimensions = dimensions ?? 256;
+    this.modelName = modelName ?? 'MongoDB/mdbr-leaf-ir'
+    this.targetDimensions = dimensions ?? 256
   }
 
   get dimensions(): number {
-    return this.targetDimensions;
+    return this.targetDimensions
   }
 
   async initialize(): Promise<void> {
-    if (this.extractor) return;
+    if (this.extractor)
+      return
 
-    const { pipeline } = await import('@huggingface/transformers');
+    const { pipeline } = await import('@huggingface/transformers')
 
     this.extractor = await pipeline('feature-extraction', this.modelName, {
       dtype: 'fp32',
-    });
+    })
   }
 
   async embed(text: string): Promise<number[]> {
     if (!this.extractor) {
-      await this.initialize();
+      await this.initialize()
     }
 
     const output = await this.extractor!(text, {
       pooling: 'mean',
       normalize: true,
-    });
+    })
 
     // Convert to regular array and apply MRL truncation
-    const tensor = output as { data: Float32Array | number[] };
-    const fullEmbedding = Array.from(tensor.data);
+    const tensor = output as { data: Float32Array | number[] }
+    const fullEmbedding = Array.from(tensor.data)
 
     // Truncate to target dimensions (MRL)
-    return this.truncateAndNormalize(fullEmbedding, this.targetDimensions);
+    return this.truncateAndNormalize(fullEmbedding, this.targetDimensions)
   }
 
   async embedBatch(texts: string[]): Promise<number[][]> {
     if (!this.extractor) {
-      await this.initialize();
+      await this.initialize()
     }
 
-    const results: number[][] = [];
+    const results: number[][] = []
 
     // Process texts one by one to avoid memory issues
     for (const text of texts) {
-      const embedding = await this.embed(text);
-      results.push(embedding);
+      const embedding = await this.embed(text)
+      results.push(embedding)
     }
 
-    return results;
+    return results
   }
 
   /**
@@ -88,22 +88,22 @@ export class MDBRLeafEmbeddingProvider implements EmbeddingProvider {
   private truncateAndNormalize(embedding: number[], targetDim: number): number[] {
     // If target is larger than embedding, return as-is
     if (targetDim >= embedding.length) {
-      return embedding;
+      return embedding
     }
 
     // Truncate
-    const truncated = embedding.slice(0, targetDim);
+    const truncated = embedding.slice(0, targetDim)
 
     // Re-normalize to unit length
-    const norm = Math.sqrt(truncated.reduce((sum, val) => sum + val * val, 0));
+    const norm = Math.sqrt(truncated.reduce((sum, val) => sum + val * val, 0))
     if (norm > 0) {
-      return truncated.map((val) => val / norm);
+      return truncated.map(val => val / norm)
     }
 
-    return truncated;
+    return truncated
   }
 
   async dispose(): Promise<void> {
-    this.extractor = null;
+    this.extractor = null
   }
 }

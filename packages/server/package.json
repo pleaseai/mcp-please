@@ -1,27 +1,31 @@
 {
   "name": "@pleaseai/mcp-server",
+  "type": "module",
   "version": "0.1.0-beta.1",
   "description": "MCP server for tool search",
-  "type": "module",
-  "main": "dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.js"
     }
   },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix --cache",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pleaseai/mcp-core": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
+    "@pleaseai/mcp-core": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.2.0",
     "@types/node": "catalog:",
+    "eslint": "^9.39.0",
     "tsup": "catalog:",
     "typescript": "catalog:"
   },

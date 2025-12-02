@@ -1,6 +1,8 @@
 [test]
 root = "tests"
-
 coverageSkipTestFiles = true
-coverageReporter = ["text", "lcov"]  # default ["text"]
+coverageReporter = [
+  "text",
+  "lcov"
+] # default ["text"]
 coverage = true
