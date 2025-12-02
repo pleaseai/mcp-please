@@ -164,8 +164,9 @@ export function createIndexCommand(): Command {
         const builtIndex = builder.buildIndex(tools)
 
         // Generate embeddings if needed
-        if (options.embeddings && indexManager.embeddingProvider) {
-          const provider = indexManager.embeddingProvider
+        const embeddingProvider = indexManager.getEmbeddingProvider()
+        if (options.embeddings && embeddingProvider) {
+          const provider = embeddingProvider
           const batchSize = 32
           for (let i = 0; i < builtIndex.length; i += batchSize) {
             const batch = builtIndex.slice(i, i + batchSize)

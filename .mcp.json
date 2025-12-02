@@ -1,3 +1,13 @@
 {
-
+  "mcpServers": {
+    "mcp-please": {
+      "command": "node",
+      "args": [
+        "packages/mcp/dist/cli.js",
+        "serve",
+        "--auto-index",
+        "--no-embeddings"
+      ]
+    }
+  }
 }

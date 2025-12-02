@@ -13,7 +13,7 @@ export const DEFAULT_SEARCH_MODE: SearchMode = 'bm25'
 /**
  * Default embedding provider
  */
-export const DEFAULT_EMBEDDING_PROVIDER: EmbeddingProviderType = 'local:minilm'
+export const DEFAULT_EMBEDDING_PROVIDER: EmbeddingProviderType = 'local:mdbr-leaf'
 
 /**
  * Default top-k results

@@ -5,7 +5,9 @@ import { Command } from 'commander'
 import ora from 'ora'
 import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE } from '../constants.js'
 import { McpToolSearchServer } from '../server.js'
-import { error, info, warn } from '../utils/output.js'
+import { ensurePleaseGitignore } from '../utils/gitignore.js'
+import { buildAndSaveIndex, indexNeedsRebuild } from '../utils/indexer.js'
+import { error, info, success, warn } from '../utils/output.js'
 
 /**
  * Create the serve command
@@ -22,6 +24,10 @@ export function createServeCommand(): Command {
       'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
       DEFAULT_EMBEDDING_PROVIDER,
     )
+    .option('--auto-index', 'Automatically index tools from MCP servers on startup')
+    .option('--no-embeddings', 'Skip embedding generation during auto-indexing')
+    .option('--timeout <ms>', 'Timeout for MCP server connections during auto-indexing', '30000')
+    .option('--exclude <servers>', 'Comma-separated list of server names to exclude from auto-indexing')
     .action(async (options) => {
       const spinner = ora('Starting MCP server...').start()
 
@@ -31,13 +37,65 @@ export function createServeCommand(): Command {
         const defaultMode = options.mode as SearchMode
         const providerType = options.provider as EmbeddingProviderType
         const indexPath = options.index as string
+        const autoIndex = options.autoIndex === true
+        const generateEmbeddings = options.embeddings !== false
+        const timeout = Number.parseInt(options.timeout, 10)
+        const excludeServers = options.exclude ? (options.exclude as string).split(',').map((s: string) => s.trim()) : []
 
-        // Ensure index file exists
-        const indexManager = new IndexManager()
-        const indexCreated = await indexManager.ensureIndexExists(indexPath)
-        if (indexCreated) {
-          warn(`Created empty index at: ${indexPath}`)
-          warn('Run `npx @pleaseai/mcp index <tools.json>` to add tools.')
+        // Auto-index if enabled and index needs rebuild
+        if (autoIndex) {
+          const needsRebuild = await indexNeedsRebuild(indexPath)
+
+          if (needsRebuild) {
+            spinner.text = 'Auto-indexing tools from MCP servers...'
+
+            try {
+              const result = await buildAndSaveIndex({
+                outputPath: indexPath,
+                embeddingProvider: generateEmbeddings ? providerType : undefined,
+                generateEmbeddings,
+                timeout,
+                excludeServers,
+                force: true,
+                onProgress: (message) => {
+                  spinner.text = message
+                },
+                onServerProgress: (serverName, status) => {
+                  if (status === 'connecting') {
+                    spinner.text = `Connecting to ${serverName}...`
+                  }
+                },
+                onWarning: (message) => {
+                  warn(message)
+                },
+                onInfo: (message) => {
+                  info(message)
+                },
+              })
+
+              // Ensure index directory is gitignored
+              ensurePleaseGitignore(['mcp.local.json', 'mcp/'])
+
+              success(`Auto-indexed ${result.indexedTools.length} tools`)
+              info(`Embeddings: ${result.hasEmbeddings ? 'Yes' : 'No'}`)
+            }
+            catch (indexErr) {
+              warn(`Auto-indexing failed: ${indexErr instanceof Error ? indexErr.message : String(indexErr)}`)
+              warn('Server will start with empty or existing index.')
+            }
+          }
+          else {
+            info('Index already exists, skipping auto-indexing.')
+          }
+        }
+        else {
+          // Ensure index file exists (original behavior)
+          const indexManager = new IndexManager()
+          const indexCreated = await indexManager.ensureIndexExists(indexPath)
+          if (indexCreated) {
+            warn(`Created empty index at: ${indexPath}`)
+            warn('Run `npx @pleaseai/mcp index` to add tools, or use --auto-index flag.')
+          }
         }
 
         // Create embedding provider

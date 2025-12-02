@@ -43,6 +43,13 @@ export class IndexManager {
   }
 
   /**
+   * Get embedding provider (readonly access)
+   */
+  getEmbeddingProvider(): EmbeddingProvider | undefined {
+    return this.embeddingProvider
+  }
+
+  /**
    * Build index from tool sources
    */
   async buildIndex(

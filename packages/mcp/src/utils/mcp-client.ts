@@ -39,10 +39,15 @@ function createTransport(config: McpServerConfig): Transport {
     return new SSEClientTransport(new URL(config.url))
   }
   else if (config.command) {
-    // Merge environment variables
-    const env = {
-      ...process.env,
-      ...config.env,
+    // Merge environment variables - filter out undefined values
+    const env: Record<string, string> = {}
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value !== undefined) {
+        env[key] = value
+      }
+    }
+    if (config.env) {
+      Object.assign(env, config.env)
     }
 
     return new StdioClientTransport({

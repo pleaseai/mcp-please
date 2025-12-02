@@ -21,8 +21,8 @@ mcp-please/
   - **Embedding**: Semantic search using vector similarity
 
 - **Configurable Embedding Providers**:
+  - **local:mdbr-leaf**: MongoDB MDBR-Leaf-IR (256 dims, optimized for search) - **default**
   - **local:minilm**: all-MiniLM-L6-v2 via transformers.js (384 dims, no API key required)
-  - **local:mdbr-leaf**: MongoDB MDBR-Leaf-IR (256 dims, optimized for search)
   - **api:openai**: OpenAI Embeddings API
   - **api:voyage**: Voyage AI embeddings
 
@@ -106,7 +106,30 @@ npx @pleaseai/mcp serve -i ./data/index.json
 
 # Set default search mode
 npx @pleaseai/mcp serve -m embedding
+
+# Auto-index on startup (discovers tools from MCP servers)
+npx @pleaseai/mcp serve --auto-index
+
+# Auto-index without embeddings (faster startup)
+npx @pleaseai/mcp serve --auto-index --no-embeddings
+
+# Auto-index with custom timeout and excluded servers
+npx @pleaseai/mcp serve --auto-index --timeout 60000 --exclude server1,server2
 ```
+
+**Auto-Index Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--auto-index` | Automatically index tools from MCP servers on startup |
+| `--no-embeddings` | Skip embedding generation during auto-indexing |
+| `--timeout <ms>` | Timeout for MCP server connections (default: 30000) |
+| `--exclude <servers>` | Comma-separated list of server names to exclude |
+
+When `--auto-index` is enabled, the server will:
+1. Check if the index exists and has tools
+2. If empty or missing, discover tools from configured MCP servers
+3. Build and save the index before starting the server
 
 ### Install to IDE
 
@@ -266,7 +289,7 @@ List all tools in the index.
 
 - **Index file**: `.please/mcp/index.json`
 - **Search mode**: `bm25`
-- **Embedding provider**: `local:minilm`
+- **Embedding provider**: `local:mdbr-leaf`
 
 ### Environment Variables
 
