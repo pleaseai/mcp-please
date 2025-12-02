@@ -30,11 +30,21 @@ bun run clean
 ### CLI Commands (after build)
 
 ```bash
-# Index tools (without embeddings - faster)
-bun packages/mcp/dist/cli.js index packages/mcp/examples/tools.json --no-embeddings
+# Index tools from MCP servers (auto-discovers from .please/mcp.json)
+bun packages/mcp/dist/cli.js index
 
-# Index with local embeddings
-bun packages/mcp/dist/cli.js index packages/mcp/examples/tools.json
+# Index without embeddings (faster)
+bun packages/mcp/dist/cli.js index --no-embeddings
+
+# Index with specific embedding provider
+bun packages/mcp/dist/cli.js index --provider local:minilm
+bun packages/mcp/dist/cli.js index --provider local:mdbr-leaf  # default
+
+# Index from specific config files
+bun packages/mcp/dist/cli.js index .please/mcp.json .please/mcp.local.json
+
+# Exclude specific servers
+bun packages/mcp/dist/cli.js index --exclude server1,server2
 
 # Search tools
 bun packages/mcp/dist/cli.js search "file operations"
@@ -43,6 +53,9 @@ bun packages/mcp/dist/cli.js search "tools for sending messages" --mode embeddin
 
 # Start MCP server
 bun packages/mcp/dist/cli.js serve
+
+# Start with auto-rebuild on config changes
+bun packages/mcp/dist/cli.js serve --rebuild
 
 # Install to IDE
 bun packages/mcp/dist/cli.js install --ide claude-code --dry-run
@@ -100,16 +113,20 @@ The search engine with three main subsystems:
 Combined CLI + MCP server package:
 
 **CLI Commands** (`src/commands/`):
-- `index-cmd.ts`: Build search index from tool definition files
+- `index-cmd.ts`: Build search index from MCP servers (auto-discovers from .please/mcp.json)
 - `search.ts`: Query the index
-- `serve.ts`: Start MCP server
+- `serve.ts`: Start MCP server (supports --rebuild for auto-rebuild on config changes)
 - `install.ts`: Install to IDE configuration
 
 **Server** (`src/server.ts`):
-MCP protocol server exposing three tools:
-- `tool_search`: Search with query, mode, top_k, threshold
-- `tool_search_info`: Get index metadata
-- `tool_search_list`: Paginated tool listing
+MCP protocol server exposing five tools:
+- `search_tools`: Search with query, mode, top_k, threshold
+- `get_index_info`: Get index metadata
+- `list_tools`: Paginated tool listing
+- `get_tool`: Get detailed tool information including input/output schema
+- `call_tool`: Execute a tool on an MCP server
+
+The server dynamically generates instructions that include a summary of indexed tools grouped by server, helping Claude route queries to the correct tool source.
 
 **Constants** (`src/constants.ts`):
 - `DEFAULT_INDEX_PATH`: `.please/mcp/index.json`

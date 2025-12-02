@@ -183,7 +183,7 @@ function createErrorResult(error: unknown): CallToolResult {
  * Exposes tool_search capability via MCP protocol
  */
 export class McpToolSearchServer {
-  private server: McpServer
+  private server!: McpServer
   private config: ServerConfig
   private indexManager: IndexManager
   private searchOrchestrator: SearchOrchestrator
@@ -200,6 +200,43 @@ export class McpToolSearchServer {
       defaultTopK: 10,
     })
     this.toolExecutor = new ToolExecutor()
+  }
+
+  /**
+   * Generate indexed tools summary for server instructions
+   */
+  private generateIndexedToolsSummary(): string {
+    if (!this.cachedIndex || this.cachedIndex.tools.length === 0) {
+      return ''
+    }
+
+    // Group tools by server
+    const toolsByServer = this.cachedIndex.tools.reduce((acc, t) => {
+      const server = (t.tool._meta?.server as string) || 'unknown'
+      if (!acc[server]) {
+        acc[server] = []
+      }
+      acc[server].push(t.tool.name)
+      return acc
+    }, {} as Record<string, string[]>)
+
+    // Format summary
+    const summary = Object.entries(toolsByServer)
+      .map(([server, tools]) => {
+        const displayTools = tools.slice(0, 5).join(', ')
+        const moreCount = tools.length > 5 ? ` (+${tools.length - 5} more)` : ''
+        return `  - ${server}: ${displayTools}${moreCount}`
+      })
+      .join('\n')
+
+    return `\n\nIndexed MCP tools (use search_tools to find, call_tool to execute):\n${summary}`
+  }
+
+  /**
+   * Initialize the MCP server with dynamic instructions
+   */
+  private initializeServer(): void {
+    const indexedToolsSummary = this.generateIndexedToolsSummary()
 
     this.server = new McpServer({
       name,
@@ -211,7 +248,7 @@ Available tools:
 - list_tools: List all indexed tools with pagination
 - get_index_info: Get index metadata and available search modes
 - get_tool: Get detailed tool information including input/output schema
-- call_tool: Execute a tool on an MCP server`,
+- call_tool: Execute a tool on an MCP server${indexedToolsSummary}`,
     })
 
     this.registerTools()
@@ -500,7 +537,7 @@ Available tools:
     this.serverConfigs = loadAllMcpServers()
     this.toolExecutor.registerServers(this.serverConfigs)
 
-    // Pre-load index
+    // Pre-load index (before server initialization for dynamic instructions)
     try {
       this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
       this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats)
@@ -508,6 +545,9 @@ Available tools:
     catch {
       // Index will be loaded on first request
     }
+
+    // Initialize server with dynamic instructions (includes indexed tools summary)
+    this.initializeServer()
 
     if (transport === 'stdio') {
       const stdioTransport = new StdioServerTransport()
