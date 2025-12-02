@@ -173,6 +173,21 @@ npx @pleaseai/mcp mcp rm my-server --scope project
 | `project` | `.please/mcp.json` | Project-wide, committed to git |
 | `user` | `~/.please/mcp.json` | User-wide settings |
 
+**Scope Details:**
+
+- **`local`**: Personal configuration that should not be shared. Automatically added to `.please/.gitignore`. Use for API keys, local paths, or experimental servers.
+- **`project`**: Shared configuration for the team. Commit to git so all team members use the same MCP servers.
+- **`user`**: Global configuration across all projects. Useful for personal MCP servers you want available everywhere.
+
+**Scope Resolution Order:**
+
+When multiple scopes define the same server, they are merged with the following priority (highest first):
+1. `local` - Local overrides take precedence
+2. `project` - Project settings override user settings
+3. `user` - Base configuration
+
+This allows you to define team-wide servers in `project` scope while overriding specific settings (like API keys) in `local` scope.
+
 ## Development
 
 ```bash
@@ -299,6 +314,13 @@ Tool definitions follow the MCP tool specification:
   ]
 }
 ```
+
+## References
+
+- [Tool Search Tool - Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)
+- [Advanced Tool Use - Anthropic Engineering](https://www.anthropic.com/engineering/advanced-tool-use)
+- [Tool Search with Embeddings - Claude Cookbook](https://github.com/anthropics/claude-cookbooks/blob/main/tool_use/tool_search_with_embeddings.ipynb)
+- [Implement Tool Use - Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use#providing-tool-use-examples)
 
 ## License
 
