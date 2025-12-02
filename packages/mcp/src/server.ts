@@ -6,7 +6,7 @@ import {
   IndexManager,
   SearchOrchestrator,
 } from '@pleaseai/mcp-core'
-import { z } from 'zod/v3'
+import { z } from 'zod'
 
 /**
  * MCP Tool Search Server
