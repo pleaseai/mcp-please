@@ -3,13 +3,12 @@ import type { OutputFormat } from '../utils/output.js'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
-
   IndexManager,
-
   SearchOrchestrator,
 } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
+import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE, DEFAULT_TOP_K } from '../constants.js'
 import { error, formatSearchResults } from '../utils/output.js'
 
 /**
@@ -19,15 +18,15 @@ export function createSearchCommand(): Command {
   const cmd = new Command('search')
     .description('Search for tools in the index')
     .argument('<query>', 'Search query string')
-    .option('-m, --mode <mode>', 'Search mode: regex | bm25 | embedding', 'bm25')
-    .option('-k, --top-k <number>', 'Number of results to return', '10')
+    .option('-m, --mode <mode>', 'Search mode: regex | bm25 | embedding', DEFAULT_SEARCH_MODE)
+    .option('-k, --top-k <number>', 'Number of results to return', String(DEFAULT_TOP_K))
     .option('-t, --threshold <number>', 'Minimum score threshold (0-1)', '0')
-    .option('-i, --index <path>', 'Path to index file', './data/index.json')
+    .option('-i, --index <path>', 'Path to index file', DEFAULT_INDEX_PATH)
     .option('-f, --format <format>', 'Output format: table | json | minimal', 'table')
     .option(
       '-p, --provider <type>',
       'Embedding provider for semantic search: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
-      'local:minilm',
+      DEFAULT_EMBEDDING_PROVIDER,
     )
     .action(async (query: string, options) => {
       const spinner = ora('Loading index...').start()

@@ -1,9 +1,10 @@
 import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
 import process from 'node:process'
 import { createEmbeddingProvider } from '@pleaseai/mcp-core'
-import { McpToolSearchServer } from '@pleaseai/mcp-server'
 import { Command } from 'commander'
 import ora from 'ora'
+import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE } from '../constants.js'
+import { McpToolSearchServer } from '../server.js'
 import { error, info } from '../utils/output.js'
 
 /**
@@ -14,12 +15,12 @@ export function createServeCommand(): Command {
     .description('Start MCP server with tool_search capability')
     .option('-t, --transport <type>', 'Transport type: stdio | http', 'stdio')
     .option('-p, --port <number>', 'HTTP port (only for http transport)', '3000')
-    .option('-i, --index <path>', 'Path to index file', './data/index.json')
-    .option('-m, --mode <mode>', 'Default search mode: regex | bm25 | embedding', 'bm25')
+    .option('-i, --index <path>', 'Path to index file', DEFAULT_INDEX_PATH)
+    .option('-m, --mode <mode>', 'Default search mode: regex | bm25 | embedding', DEFAULT_SEARCH_MODE)
     .option(
       '--provider <type>',
       'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
-      'local:minilm',
+      DEFAULT_EMBEDDING_PROVIDER,
     )
     .action(async (options) => {
       const spinner = ora('Starting MCP server...').start()

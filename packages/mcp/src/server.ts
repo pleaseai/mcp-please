@@ -3,11 +3,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   createEmbeddingProvider,
-
   IndexManager,
-
   SearchOrchestrator,
-
 } from '@pleaseai/mcp-core'
 import { z } from 'zod/v3'
 
@@ -32,7 +29,7 @@ export class McpToolSearchServer {
     })
 
     this.server = new McpServer({
-      name: 'mcp-tool-search',
+      name: 'pleaseai-mcp',
       version: '1.0.0',
     })
 

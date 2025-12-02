@@ -1,17 +1,28 @@
 {
-  "name": "@pleaseai/mcp-server",
+  "name": "@pleaseai/mcp",
   "type": "module",
-  "version": "0.1.0-beta.1",
-  "description": "MCP server for tool search",
+  "version": "0.1.0",
+  "description": "MCP server and CLI for tool search",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
     }
   },
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "pleaseai-mcp": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "start": "bun dist/cli.js",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --fix --cache",
@@ -20,6 +31,11 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
     "@pleaseai/mcp-core": "workspace:*",
+    "chalk": "catalog:",
+    "cli-table3": "catalog:",
+    "commander": "catalog:",
+    "ora": "catalog:",
+    "std-env": "^3.10.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -28,8 +44,5 @@
     "eslint": "^9.39.0",
     "tsup": "catalog:",
     "typescript": "catalog:"
-  },
-  "publishConfig": {
-    "tag": "beta"
   }
 }

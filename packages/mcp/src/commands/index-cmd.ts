@@ -2,11 +2,11 @@ import type { EmbeddingProviderType } from '@pleaseai/mcp-core'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
-
   IndexManager,
 } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
+import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH } from '../constants.js'
 import { error, info, success } from '../utils/output.js'
 
 /**
@@ -16,11 +16,11 @@ export function createIndexCommand(): Command {
   const cmd = new Command('index')
     .description('Build search index from tool definitions')
     .argument('<sources...>', 'Paths to JSON/YAML files or directories')
-    .option('-o, --output <path>', 'Output path for index file', './data/index.json')
+    .option('-o, --output <path>', 'Output path for index file', DEFAULT_INDEX_PATH)
     .option(
       '-p, --provider <type>',
       'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
-      'local:minilm',
+      DEFAULT_EMBEDDING_PROVIDER,
     )
     .option('-m, --model <name>', 'Embedding model name')
     .option('--no-embeddings', 'Skip embedding generation')

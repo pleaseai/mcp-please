@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { $ } from 'bun'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
-const CLI_PATH = join(import.meta.dir, '../dist/index.js')
+const CLI_PATH = join(import.meta.dir, '../dist/cli.js')
 const EXAMPLES_PATH = join(import.meta.dir, '../examples/tools.json')
 const TEST_OUTPUT_DIR = join(import.meta.dir, '../.test-output')
 

@@ -1,0 +1,12 @@
+[test]
+root = ["tests"]
+# Enable coverage by default
+coverage = true
+
+# Set coverage reporter
+coverageReporter = ["text", "lcov"]
+
+# Set coverage output directory
+coverageDir = "./coverage"
+
+coverageSkipTestFiles = true  # Exclude test files from coverage reports

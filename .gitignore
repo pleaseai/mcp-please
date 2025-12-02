@@ -39,3 +39,4 @@ coverage/
 .eslintcache
 
 .claude/settings.local.json
+/packages/mcp/.test-output/
