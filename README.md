@@ -135,6 +135,44 @@ npx @pleaseai/mcp install --ide codex
 npx @pleaseai/mcp install --dry-run
 ```
 
+### Manage MCP Servers
+
+Manage MCP server configurations (similar to `claude mcp` command):
+
+```bash
+# Add a stdio server (default scope: local)
+npx @pleaseai/mcp mcp add my-server npx -- @some/mcp-server --option value
+
+# Add an HTTP server
+npx @pleaseai/mcp mcp add notion --transport http https://mcp.notion.com/mcp
+
+# Add with environment variables
+npx @pleaseai/mcp mcp add my-server npx @some/mcp -e API_KEY=xxx -e DEBUG=true
+
+# Add to specific scope
+npx @pleaseai/mcp mcp add my-server npx @some/mcp --scope project
+npx @pleaseai/mcp mcp add my-server npx @some/mcp --scope user
+
+# List all configured servers
+npx @pleaseai/mcp mcp list
+npx @pleaseai/mcp mcp ls --format json
+
+# Get server details
+npx @pleaseai/mcp mcp get my-server
+
+# Remove a server
+npx @pleaseai/mcp mcp remove my-server
+npx @pleaseai/mcp mcp rm my-server --scope project
+```
+
+**Configuration Scopes:**
+
+| Scope | Path | Purpose |
+|-------|------|---------|
+| `local` (default) | `.please/mcp.local.json` | Local overrides, gitignored |
+| `project` | `.please/mcp.json` | Project-wide, committed to git |
+| `user` | `~/.please/mcp.json` | User-wide settings |
+
 ## Development
 
 ```bash
@@ -176,6 +214,7 @@ CLI + MCP server exposing:
 - `search` - Search for tools
 - `serve` - Start MCP server (default command)
 - `install` - Install to IDE configuration
+- `mcp` - Manage MCP server configurations
 
 MCP tools:
 - `tool_search` - Search with query, mode, top_k, threshold

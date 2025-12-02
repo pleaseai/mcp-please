@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "nuxt-ui-remote": {
+      "transport": "http",
+      "url": "https://nuxt-ui-remote.example.com/api"
+    }
+  }
+}

@@ -4,6 +4,7 @@ import process from 'node:process'
 import { Command } from 'commander'
 import { createIndexCommand } from './commands/index-cmd.js'
 import { createInstallCommand } from './commands/install.js'
+import { createMcpCommand } from './commands/mcp.js'
 import { createSearchCommand } from './commands/search.js'
 import { createServeCommand } from './commands/serve.js'
 
@@ -19,6 +20,7 @@ program.addCommand(createIndexCommand())
 program.addCommand(createSearchCommand())
 program.addCommand(createServeCommand())
 program.addCommand(createInstallCommand())
+program.addCommand(createMcpCommand())
 
 // Default action: run serve command if no subcommand provided
 program.action(async () => {
