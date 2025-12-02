@@ -55,7 +55,13 @@ When to use:
 Examples:
 - query: "file operations" → finds tools for reading, writing, editing files
 - query: "read.*" with mode: "regex" → finds tools matching the pattern
-- query: "tools for sending messages" with mode: "embedding" → semantic search`
+- query: "tools for sending messages" with mode: "embedding" → semantic search
+
+Response Format:
+- Return the matching tools ranked by relevance score
+- Each result includes tool name, description, and relevance score
+- Results are limited by top_k parameter (default: 10)
+- Use threshold to filter out low-relevance matches`
 
 // ============================================================================
 // Tool: get_index_info
@@ -70,7 +76,13 @@ Returns: total tool count, available search modes, embedding status, and index m
 When to use:
 - Check if embedding search is available
 - Get total number of indexed tools
-- Verify index is loaded correctly`
+- Verify index is loaded correctly
+
+Response Format:
+- indexPath: Path to the index file
+- totalTools: Number of tools in the index
+- hasEmbeddings: Whether semantic search is available
+- availableModes: List of available search modes (regex, bm25, embedding)`
 
 // ============================================================================
 // Tool: list_tools
@@ -93,7 +105,13 @@ Returns: array of tools with name, title, and description.
 When to use:
 - Browse all available tools without searching
 - Get a complete inventory of indexed tools
-- Paginate through large tool collections`
+- Paginate through large tool collections
+
+Response Format:
+- tools: Array of tool objects with name, title, and description
+- total: Total number of tools in the index
+- limit: Number of tools returned per page
+- offset: Starting position for pagination`
 
 // ============================================================================
 // Tool: call_tool
@@ -113,6 +131,8 @@ interface CallToolInput {
 
 const CALL_TOOL_DESCRIPTION = `Execute a tool on an MCP server.
 
+You MUST call 'get_tool' first to obtain the tool's input schema UNLESS you already know the exact parameter structure required by the tool.
+
 Returns: Tool execution result from the target MCP server.
 
 When to use:
@@ -120,10 +140,19 @@ When to use:
 - Call tools on registered MCP servers
 - Interact with external MCP server capabilities
 
+Selection Process:
+1. Use search_tools to find the right tool for your task
+2. Use get_tool to retrieve the input schema and understand required parameters
+3. Call call_tool with the correct arguments matching the schema
+
 Notes:
 - If server_name is not provided, it will be auto-detected from the tool's metadata in the index
 - The tool must exist in the index and have a valid server reference
-- Arguments must match the tool's input schema`
+- Arguments must match the tool's input schema
+
+Response Format:
+- Returns the raw result from the target MCP server
+- May include text, images, or other content types depending on the tool`
 
 // ============================================================================
 // Tool: get_tool
@@ -139,12 +168,23 @@ interface GetToolInput {
 
 const GET_TOOL_DESCRIPTION = `Get detailed information about a specific tool including its input/output schema.
 
+You MUST call this function before 'call_tool' to obtain the tool's input schema UNLESS you already know the exact parameter structure required by the tool.
+
 Returns: Full tool definition with name, description, inputSchema, outputSchema, and server metadata.
 
 When to use:
 - After search_tools to get parameter schema before call_tool
 - To understand required/optional parameters
-- To validate arguments before execution`
+- To validate arguments before execution
+
+Response Format:
+- name: Tool name (use this for call_tool)
+- title: Human-readable title
+- description: Detailed description of what the tool does
+- inputSchema: JSON Schema defining required and optional parameters
+- outputSchema: JSON Schema defining the response format (if available)
+- metadata: Additional tool metadata
+- server: Name of the MCP server hosting this tool`
 
 // ============================================================================
 // Helper functions
