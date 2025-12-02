@@ -31,6 +31,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
     "@pleaseai/mcp-core": "workspace:*",
+    "@toon-format/toon": "^2.0.1",
     "chalk": "catalog:",
     "cli-table3": "catalog:",
     "commander": "catalog:",

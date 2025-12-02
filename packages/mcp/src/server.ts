@@ -9,6 +9,7 @@ import {
   IndexManager,
   SearchOrchestrator,
 } from '@pleaseai/mcp-core'
+import { encode as toToon } from '@toon-format/toon'
 import { z } from 'zod/v3'
 import { loadAllMcpServers } from './utils/mcp-config.js'
 import { ToolExecutor } from './utils/tool-executor.js'
@@ -154,7 +155,11 @@ function createTextResult(data: unknown): CallToolResult {
     content: [
       {
         type: 'text' as const,
-        text: JSON.stringify(data, null, 2),
+        text: toToon(data, {
+          indent: 2,
+          delimiter: '\t',
+          keyFolding: 'safe',
+        }),
       },
     ],
   }
