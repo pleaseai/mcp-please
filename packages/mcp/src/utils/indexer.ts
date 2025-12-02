@@ -1,4 +1,4 @@
-import type { EmbeddingProvider, EmbeddingProviderType, IndexedTool, PersistedIndex } from '@pleaseai/mcp-core'
+import type { EmbeddingProvider, EmbeddingProviderType, IndexedTool, ModelDtype, PersistedIndex } from '@pleaseai/mcp-core'
 import type { MergedServerEntry } from './mcp-config.js'
 import {
   createEmbeddingProvider,
@@ -15,6 +15,8 @@ export interface IndexOptions {
   outputPath: string
   embeddingProvider?: EmbeddingProviderType
   embeddingModel?: string
+  /** Model dtype for local providers (default: 'fp32') */
+  dtype?: ModelDtype
   generateEmbeddings?: boolean
   timeout?: number
   excludeServers?: string[]
@@ -45,6 +47,7 @@ export async function buildAndSaveIndex(options: IndexOptions): Promise<IndexRes
     outputPath,
     embeddingProvider: providerType,
     embeddingModel,
+    dtype,
     generateEmbeddings = false,
     timeout = 30000,
     excludeServers = [],
@@ -65,6 +68,7 @@ export async function buildAndSaveIndex(options: IndexOptions): Promise<IndexRes
     embeddingProvider = createEmbeddingProvider({
       type: providerType,
       model: embeddingModel,
+      dtype,
     })
 
     await embeddingProvider.initialize()

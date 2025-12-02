@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype } from '@pleaseai/mcp-core'
 import type { McpConfig, MergedServerEntry } from '../utils/mcp-config.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -53,6 +53,11 @@ export function createIndexCommand(): Command {
       DEFAULT_EMBEDDING_PROVIDER,
     )
     .option('-m, --model <name>', 'Embedding model name')
+    .option(
+      '-d, --dtype <type>',
+      'Model dtype for local providers: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')
     .option('-t, --timeout <ms>', 'Timeout for MCP server connections', '30000')
@@ -73,6 +78,7 @@ export function createIndexCommand(): Command {
           const provider = createEmbeddingProvider({
             type: providerType,
             model: options.model,
+            dtype: options.dtype as ModelDtype,
           })
 
           await provider.initialize()

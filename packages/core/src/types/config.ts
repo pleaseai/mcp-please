@@ -19,6 +19,18 @@ export type EmbeddingProviderType
     | 'api:voyage'
 
 /**
+ * Model dtype (data type) for local embedding providers
+ *
+ * Affects memory usage and inference speed:
+ * - fp32: Full precision (default, best compatibility)
+ * - fp16: Half precision (faster on GPU, ~50% memory)
+ * - q8: 8-bit quantized (~25% memory, slight accuracy loss)
+ * - q4: 4-bit quantized (~12.5% memory, more accuracy loss)
+ * - q4f16: 4-bit with fp16 compute (balance of speed and accuracy)
+ */
+export type ModelDtype = 'fp32' | 'fp16' | 'q8' | 'q4' | 'q4f16'
+
+/**
  * Embedding provider configuration
  */
 export interface EmbeddingProviderConfig {
@@ -27,6 +39,8 @@ export interface EmbeddingProviderConfig {
   apiKey?: string
   apiBase?: string
   dimensions?: number
+  /** Model dtype for local providers (default: 'fp32') */
+  dtype?: ModelDtype
   options?: Record<string, unknown>
 }
 

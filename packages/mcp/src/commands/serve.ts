@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype, SearchMode } from '@pleaseai/mcp-core'
 import process from 'node:process'
 import { createEmbeddingProvider, IndexManager } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
@@ -26,6 +26,11 @@ export function createServeCommand(): Command {
     )
     .option('--auto-index', 'Automatically index tools from MCP servers on startup')
     .option('--no-embeddings', 'Skip embedding generation during auto-indexing')
+    .option(
+      '--dtype <type>',
+      'Model dtype for local providers: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .option('--timeout <ms>', 'Timeout for MCP server connections during auto-indexing', '30000')
     .option('--exclude <servers>', 'Comma-separated list of server names to exclude from auto-indexing')
     .action(async (options) => {
@@ -39,6 +44,7 @@ export function createServeCommand(): Command {
         const indexPath = options.index as string
         const autoIndex = options.autoIndex === true
         const generateEmbeddings = options.embeddings !== false
+        const dtype = options.dtype as ModelDtype
         const timeout = Number.parseInt(options.timeout, 10)
         const excludeServers = options.exclude ? (options.exclude as string).split(',').map((s: string) => s.trim()) : []
 
@@ -54,6 +60,7 @@ export function createServeCommand(): Command {
                 outputPath: indexPath,
                 embeddingProvider: generateEmbeddings ? providerType : undefined,
                 generateEmbeddings,
+                dtype,
                 timeout,
                 excludeServers,
                 force: true,
@@ -101,6 +108,7 @@ export function createServeCommand(): Command {
         // Create embedding provider
         const embeddingProvider = createEmbeddingProvider({
           type: providerType,
+          dtype,
         })
 
         // Create server

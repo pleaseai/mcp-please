@@ -46,10 +46,10 @@ export class EmbeddingProviderRegistry {
     // Built-in providers (format: 'location:model')
     switch (config.type) {
       case 'local:minilm':
-        return new MiniLMEmbeddingProvider(config.model)
+        return new MiniLMEmbeddingProvider(config.model, config.dtype)
 
       case 'local:mdbr-leaf':
-        return new MDBRLeafEmbeddingProvider(config.model, config.dimensions)
+        return new MDBRLeafEmbeddingProvider(config.model, config.dimensions, config.dtype)
 
       case 'api:openai':
         return new OpenAIEmbeddingProvider({
