@@ -37,8 +37,10 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.2.0",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "eslint": "^9.39.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "turbo": "^2.6.1",
@@ -46,7 +48,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "eslint --fix --cache"
+      "eslint --fix --cache --concurrency=auto"
     ]
   }
 }

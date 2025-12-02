@@ -131,8 +131,8 @@ function readTomlConfig(configPath: string): CodexMcpConfig {
 
       // Find [mcp_servers.xxx] sections
       const serverRegex = /\[mcp_servers\.([^\]]+)\]/g
-      let match
-      while ((match = serverRegex.exec(content)) !== null) {
+      let match = serverRegex.exec(content)
+      while (match !== null) {
         const serverName = match[1]
         const startIndex = match.index + match[0].length
         const nextSectionIndex = content.indexOf('\n[', startIndex)
@@ -152,6 +152,7 @@ function readTomlConfig(configPath: string): CodexMcpConfig {
               : [],
           }
         }
+        match = serverRegex.exec(content)
       }
 
       return { mcp_servers: mcpServers }
@@ -269,7 +270,7 @@ export function createInstallCommand(): Command {
             info('Dry run - no changes written')
             info(`Config path: ${configPath}`)
             info('Generated config:')
-            console.log(generateTomlEntry(serverName, indexPath))
+            info(generateTomlEntry(serverName, indexPath))
             return
           }
 
@@ -297,7 +298,7 @@ export function createInstallCommand(): Command {
             info('Dry run - no changes written')
             info(`Config path: ${configPath}`)
             info('Generated config:')
-            console.log(JSON.stringify(config, null, 2))
+            info(JSON.stringify(config, null, 2))
             return
           }
 

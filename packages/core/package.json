@@ -16,8 +16,8 @@
     "dev": "tsup --watch",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --cache",
-    "lint:fix": "eslint . --fix --cache",
+    "lint": "eslint . --cache --concurrency=auto",
+    "lint:fix": "eslint . --fix --cache --concurrency=auto",
     "clean": "rm -rf dist"
   },
   "dependencies": {
