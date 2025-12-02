@@ -101,6 +101,26 @@ export class IndexStorage {
   }
 
   /**
+   * Create an empty index file
+   */
+  async createEmpty(outputPath: string): Promise<void> {
+    await this.save([], outputPath)
+  }
+
+  /**
+   * Ensure index file exists, creating an empty one if not
+   * @returns true if index was created, false if it already existed
+   */
+  async ensureExists(indexPath: string): Promise<boolean> {
+    const indexExists = await this.exists(indexPath)
+    if (!indexExists) {
+      await this.createEmpty(indexPath)
+      return true
+    }
+    return false
+  }
+
+  /**
    * Compute BM25 statistics from indexed tools
    */
   private computeBM25Stats(indexedTools: IndexedTool[]): BM25Stats {

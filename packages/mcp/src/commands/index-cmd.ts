@@ -1,4 +1,7 @@
 import type { EmbeddingProviderType } from '@pleaseai/mcp-core'
+import type { McpConfig, MergedServerEntry } from '../utils/mcp-config.js'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
@@ -7,15 +10,42 @@ import {
 import { Command } from 'commander'
 import ora from 'ora'
 import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH } from '../constants.js'
-import { error, info, success } from '../utils/output.js'
+import { ensurePleaseGitignore } from '../utils/gitignore.js'
+import { discoverToolsFromServers, flattenServerTools } from '../utils/mcp-client.js'
+import { loadAllMcpServers } from '../utils/mcp-config.js'
+import { error, info, success, warn } from '../utils/output.js'
+
+/**
+ * Load MCP config from a file path
+ */
+function loadMcpConfigFile(filePath: string): MergedServerEntry[] {
+  const absolutePath = resolve(filePath)
+
+  if (!existsSync(absolutePath)) {
+    throw new Error(`Config file not found: ${absolutePath}`)
+  }
+
+  const content = readFileSync(absolutePath, 'utf-8')
+  const config = JSON.parse(content) as McpConfig
+
+  if (!config.mcpServers || Object.keys(config.mcpServers).length === 0) {
+    return []
+  }
+
+  return Object.entries(config.mcpServers).map(([name, serverConfig]) => ({
+    name,
+    config: serverConfig,
+    source: 'local' as const,
+  }))
+}
 
 /**
  * Create the index command
  */
 export function createIndexCommand(): Command {
   const cmd = new Command('index')
-    .description('Build search index from tool definitions')
-    .argument('<sources...>', 'Paths to JSON/YAML files or directories')
+    .description('Build search index from MCP servers')
+    .argument('[sources...]', 'Paths to MCP config files (optional, auto-discovers from .please/mcp.json if not provided)')
     .option('-o, --output <path>', 'Output path for index file', DEFAULT_INDEX_PATH)
     .option(
       '-p, --provider <type>',
@@ -25,6 +55,8 @@ export function createIndexCommand(): Command {
     .option('-m, --model <name>', 'Embedding model name')
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')
+    .option('-t, --timeout <ms>', 'Timeout for MCP server connections', '30000')
+    .option('--exclude <servers>', 'Comma-separated list of server names to exclude')
     .action(async (sources: string[], options) => {
       const spinner = ora('Loading tools...').start()
 
@@ -58,30 +90,105 @@ export function createIndexCommand(): Command {
           }
         }
 
-        // Build index
-        spinner.text = 'Building index...'
+        let servers: MergedServerEntry[] = []
 
-        const indexedTools = await indexManager.buildIndex(sources, {
-          generateEmbeddings: options.embeddings,
-          onProgress: (current, total, toolName) => {
-            spinner.text = `Processing ${current}/${total}: ${toolName}`
+        // If sources provided, load from config files
+        if (sources.length > 0) {
+          spinner.text = 'Loading MCP configurations from files...'
+
+          for (const source of sources) {
+            try {
+              const fileServers = loadMcpConfigFile(source)
+              servers.push(...fileServers)
+              info(`Loaded ${fileServers.length} server(s) from ${source}`)
+            }
+            catch (err) {
+              warn(`Failed to load ${source}: ${err instanceof Error ? err.message : String(err)}`)
+            }
+          }
+        }
+        else {
+          // Auto-discover from default MCP config locations
+          spinner.text = 'Loading MCP server configurations...'
+          servers = loadAllMcpServers()
+        }
+
+        if (servers.length === 0) {
+          spinner.fail('No MCP servers found. Create .please/mcp.json or provide config files.')
+          process.exit(1)
+        }
+
+        info(`Found ${servers.length} MCP server(s)`)
+
+        const timeout = Number.parseInt(options.timeout, 10)
+        const excludeServers = options.exclude ? (options.exclude as string).split(',').map((s: string) => s.trim()) : []
+
+        spinner.text = 'Discovering tools from MCP servers...'
+        const results = await discoverToolsFromServers(servers, {
+          timeout,
+          excludeServers,
+          onProgress: (serverName, status) => {
+            if (status === 'connecting') {
+              spinner.text = `Connecting to ${serverName}...`
+            }
+            else if (status === 'done') {
+              spinner.text = `${serverName}: done`
+            }
+            else if (status === 'error') {
+              spinner.text = `${serverName}: failed`
+            }
           },
         })
 
-        if (indexedTools.length === 0) {
-          spinner.fail('No tools found in the provided sources.')
+        // Report results
+        for (const result of results) {
+          if (result.error) {
+            warn(`${result.serverName} (${result.source}): ${result.error}`)
+          }
+          else {
+            info(`${result.serverName} (${result.source}): ${result.tools.length} tools`)
+          }
+        }
+
+        const tools = flattenServerTools(results)
+
+        if (tools.length === 0) {
+          spinner.fail('No tools found from MCP servers.')
           process.exit(1)
+        }
+
+        // Build index from discovered tools
+        spinner.text = 'Building index...'
+        const { IndexBuilder } = await import('@pleaseai/mcp-core')
+        const builder = new IndexBuilder()
+        const builtIndex = builder.buildIndex(tools)
+
+        // Generate embeddings if needed
+        if (options.embeddings && indexManager.embeddingProvider) {
+          const provider = indexManager.embeddingProvider
+          const batchSize = 32
+          for (let i = 0; i < builtIndex.length; i += batchSize) {
+            const batch = builtIndex.slice(i, i + batchSize)
+            const texts = batch.map(t => t.searchableText)
+            const embeddings = await provider.embedBatch(texts)
+            for (let j = 0; j < batch.length; j++) {
+              batch[j].embedding = embeddings[j]
+              spinner.text = `Processing ${i + j + 1}/${builtIndex.length}: ${batch[j].tool.name}`
+            }
+          }
         }
 
         // Save index
         spinner.text = 'Saving index...'
-        await indexManager.saveIndex(indexedTools, options.output)
+        await indexManager.saveIndex(builtIndex, options.output)
 
-        spinner.succeed(`Indexed ${indexedTools.length} tools`)
+        // Ensure index directory is gitignored
+        ensurePleaseGitignore(['mcp.local.json', 'mcp/'])
+
+        spinner.succeed(`Indexed ${builtIndex.length} tools`)
         success(`Index saved to ${options.output}`)
 
-        // Show stats
-        const hasEmbeddings = indexedTools.some(t => t.embedding && t.embedding.length > 0)
+        const hasEmbeddings = builtIndex.some(t => t.embedding && t.embedding.length > 0)
         info(`Embeddings: ${hasEmbeddings ? 'Yes' : 'No'}`)
       }
       catch (err) {

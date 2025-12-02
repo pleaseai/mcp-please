@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
+import { IndexManager } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
 import { DEFAULT_INDEX_PATH, MCP_SERVER_NAME, PACKAGE_NAME } from '../constants.js'
@@ -250,6 +251,14 @@ export function createInstallCommand(): Command {
         const indexPath = resolve(options.index)
         const serverName = options.name as string
         const dryRun = options.dryRun as boolean
+
+        // Ensure index file exists
+        const indexManager = new IndexManager()
+        const indexCreated = await indexManager.ensureIndexExists(indexPath)
+        if (indexCreated) {
+          info(`Created empty index at: ${indexPath}`)
+          info('Run `npx @pleaseai/mcp index <tools.json>` to add tools.')
+        }
 
         // Get config path
         const configPath = getConfigPath(ide)

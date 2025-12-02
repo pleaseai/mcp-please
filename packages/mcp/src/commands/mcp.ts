@@ -6,6 +6,7 @@ import chalk from 'chalk'
 import Table from 'cli-table3'
 import { Command } from 'commander'
 import ora from 'ora'
+import { ensurePleaseGitignore } from '../utils/gitignore.js'
 import { error, info, success, warn } from '../utils/output.js'
 
 type TransportType = 'stdio' | 'http' | 'sse'
@@ -87,37 +88,6 @@ function writeConfig(configPath: string, config: McpConfig): void {
     mkdirSync(dir, { recursive: true })
   }
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
-}
-
-/**
- * Ensure mcp.local.json is in .please/.gitignore
- */
-function ensureGitignore(): void {
-  const gitignorePath = join(process.cwd(), '.please', '.gitignore')
-  const entry = 'mcp.local.json'
-
-  let content = ''
-  if (existsSync(gitignorePath)) {
-    content = readFileSync(gitignorePath, 'utf-8')
-    // Check if entry already exists
-    const lines = content.split('\n').map(line => line.trim())
-    if (lines.includes(entry)) {
-      return
-    }
-  }
-  else {
-    // Ensure .please directory exists
-    const dir = dirname(gitignorePath)
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true })
-    }
-  }
-
-  // Append entry
-  const newContent = content.endsWith('\n') || content === ''
-    ? `${content}${entry}\n`
-    : `${content}\n${entry}\n`
-  writeFileSync(gitignorePath, newContent)
 }
 
 /**
@@ -214,7 +184,7 @@ function createAddCommand(): Command {
 
         // Ensure mcp.local.json is gitignored when using local scope
         if (scope === 'local') {
-          ensureGitignore()
+          ensurePleaseGitignore(['mcp.local.json'])
         }
 
         spinner.succeed(`Added MCP server "${name}"`)
@@ -350,7 +320,7 @@ function createListCommand(): Command {
           for (const [name, { config, scope: s }] of servers) {
             output[name] = { ...config, scope: s }
           }
-          console.log(JSON.stringify(output, null, 2))
+          process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
           return
         }
 
@@ -374,8 +344,8 @@ function createListCommand(): Command {
           ])
         }
 
-        console.log(chalk.bold(`\nConfigured MCP Servers (${servers.size})\n`))
-        console.log(table.toString())
+        process.stdout.write(chalk.bold(`\nConfigured MCP Servers (${servers.size})\n`))
+        process.stdout.write(`${table.toString()}\n`)
       }
       catch (err) {
         error(err instanceof Error ? err.message : String(err))
@@ -406,12 +376,12 @@ function createGetCommand(): Command {
         const { config, scope, path } = serverInfo
 
         if (format === 'json') {
-          console.log(JSON.stringify({ name, ...config, scope, configPath: path }, null, 2))
+          process.stdout.write(`${JSON.stringify({ name, ...config, scope, configPath: path }, null, 2)}\n`)
           return
         }
 
         // Table format
-        console.log(chalk.bold(`\nMCP Server: ${name}\n`))
+        process.stdout.write(chalk.bold(`\nMCP Server: ${name}\n`))
 
         const table = new Table({
           style: { head: [], border: [] },
@@ -441,7 +411,7 @@ function createGetCommand(): Command {
           table.push([chalk.cyan('Environment'), envDisplay])
         }
 
-        console.log(table.toString())
+        process.stdout.write(`${table.toString()}\n`)
       }
       catch (err) {
         error(err instanceof Error ? err.message : String(err))

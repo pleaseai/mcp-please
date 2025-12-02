@@ -1,11 +1,11 @@
 import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
 import process from 'node:process'
-import { createEmbeddingProvider } from '@pleaseai/mcp-core'
+import { createEmbeddingProvider, IndexManager } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
 import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE } from '../constants.js'
 import { McpToolSearchServer } from '../server.js'
-import { error, info } from '../utils/output.js'
+import { error, info, warn } from '../utils/output.js'
 
 /**
  * Create the serve command
@@ -30,6 +30,15 @@ export function createServeCommand(): Command {
         const port = Number.parseInt(options.port, 10)
         const defaultMode = options.mode as SearchMode
         const providerType = options.provider as EmbeddingProviderType
+        const indexPath = options.index as string
+
+        // Ensure index file exists
+        const indexManager = new IndexManager()
+        const indexCreated = await indexManager.ensureIndexExists(indexPath)
+        if (indexCreated) {
+          warn(`Created empty index at: ${indexPath}`)
+          warn('Run `npx @pleaseai/mcp index <tools.json>` to add tools.')
+        }
 
         // Create embedding provider
         const embeddingProvider = createEmbeddingProvider({

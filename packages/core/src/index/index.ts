@@ -160,4 +160,19 @@ export class IndexManager {
     this.cachedIndex = undefined
     this.cachedIndexPath = undefined
   }
+
+  /**
+   * Create an empty index file
+   */
+  async createEmptyIndex(outputPath: string): Promise<void> {
+    await this.storage.createEmpty(outputPath)
+  }
+
+  /**
+   * Ensure index file exists, creating an empty one if not
+   * @returns true if index was created, false if it already existed
+   */
+  async ensureIndexExists(indexPath: string): Promise<boolean> {
+    return this.storage.ensureExists(indexPath)
+  }
 }
