@@ -23,13 +23,13 @@
   "dependencies": {
     "@huggingface/transformers": "catalog:",
     "openai": "catalog:",
-    "std-env": "^3.10.0",
+    "std-env": "catalog:",
     "yaml": "catalog:"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^6.2.0",
+    "@antfu/eslint-config": "catalog:",
     "@types/node": "catalog:",
-    "eslint": "^9.39.0",
+    "eslint": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"
   },

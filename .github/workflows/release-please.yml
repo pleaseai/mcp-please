@@ -52,21 +52,16 @@ jobs:
       - name: Build packages
         run: bun run build
 
-      - name: Setup npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
       - name: Publish @pleaseai/mcp-core
         if: ${{ needs.release-please.outputs.core_release_created == 'true' }}
-        run: |
-          cd packages/core
-          npm publish --access public --tag beta
+        run: bun publish --access public --tag beta
+        working-directory: packages/core
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @pleaseai/mcp
         if: ${{ needs.release-please.outputs.mcp_release_created == 'true' }}
-        run: |
-          cd packages/mcp
-          npm publish --access public --tag beta
+        run: bun publish --access public --tag beta
+        working-directory: packages/mcp
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
