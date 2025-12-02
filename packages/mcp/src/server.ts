@@ -125,6 +125,27 @@ Notes:
 - Arguments must match the tool's input schema`
 
 // ============================================================================
+// Tool: get_tool
+// ============================================================================
+
+const GetToolInputSchema = {
+  tool_name: z.string().describe('Name of the tool to retrieve details for'),
+}
+
+interface GetToolInput {
+  tool_name: string
+}
+
+const GET_TOOL_DESCRIPTION = `Get detailed information about a specific tool including its input/output schema.
+
+Returns: Full tool definition with name, description, inputSchema, outputSchema, and server metadata.
+
+When to use:
+- After search_tools to get parameter schema before call_tool
+- To understand required/optional parameters
+- To validate arguments before execution`
+
+// ============================================================================
 // Helper functions
 // ============================================================================
 
@@ -184,6 +205,7 @@ Available tools:
 - search_tools: Search tools by query with regex, BM25, or embedding modes
 - list_tools: List all indexed tools with pagination
 - get_index_info: Get index metadata and available search modes
+- get_tool: Get detailed tool information including input/output schema
 - call_tool: Execute a tool on an MCP server`,
     })
 
@@ -206,6 +228,7 @@ Available tools:
     this.registerSearchTools()
     this.registerGetIndexInfo()
     this.registerListTools()
+    this.registerGetTool()
     this.registerCallTool()
   }
 
@@ -326,6 +349,48 @@ Available tools:
         inputSchema: ListToolsInputSchema,
       },
       handleListTools,
+    )
+  }
+
+  /**
+   * Register get_tool tool
+   */
+  private registerGetTool(): void {
+    const handleGetTool = async (input: GetToolInput): Promise<CallToolResult> => {
+      try {
+        if (!this.cachedIndex) {
+          this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+        }
+
+        const indexedTool = this.cachedIndex.tools.find(t => t.tool.name === input.tool_name)
+        if (!indexedTool) {
+          return createErrorResult(`Tool not found: ${input.tool_name}`)
+        }
+
+        const tool = indexedTool.tool
+        return createTextResult({
+          name: tool.name,
+          title: tool.title,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+          outputSchema: tool.outputSchema,
+          metadata: tool.metadata,
+          server: tool._meta?.server,
+        })
+      }
+      catch (err) {
+        return createErrorResult(err)
+      }
+    }
+
+    this.server.registerTool(
+      'get_tool',
+      {
+        title: 'Get Tool',
+        description: GET_TOOL_DESCRIPTION,
+        inputSchema: GetToolInputSchema,
+      },
+      handleGetTool,
     )
   }
 
