@@ -1,6 +1,7 @@
 {
   "name": "@pleaseai/mcp-monorepo",
   "private": true,
+  "type": "module",
   "workspaces": {
     "packages": [
       "apps/*",

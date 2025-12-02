@@ -6,11 +6,9 @@ MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **seman
 
 ```
 mcp-search/
-├── apps/
-│   └── cli/                 # CLI application (@pleaseai/mcp-cli)
 ├── packages/
 │   ├── core/                # Core search engine (@pleaseai/mcp-core)
-│   └── server/              # MCP server (@pleaseai/mcp-server)
+│   └── mcp/                 # CLI + MCP server (@pleaseai/mcp)
 ├── turbo.json               # Turbo build configuration
 └── package.json             # Root workspace configuration
 ```
@@ -23,17 +21,26 @@ mcp-search/
   - **Embedding**: Semantic search using vector similarity
 
 - **Configurable Embedding Providers**:
-  - **Local**: all-MiniLM-L6-v2 via transformers.js (no API key required)
-  - **OpenAI**: OpenAI Embeddings API
-  - **Voyage AI**: Voyage AI embeddings
+  - **local:minilm**: all-MiniLM-L6-v2 via transformers.js (384 dims, no API key required)
+  - **local:mdbr-leaf**: MongoDB MDBR-Leaf-IR (256 dims, optimized for search)
+  - **api:openai**: OpenAI Embeddings API
+  - **api:voyage**: Voyage AI embeddings
 
 - **Tool Source**: Load tool definitions from JSON/YAML files
 
 - **MCP Server**: Expose `tool_search` capability via MCP protocol
 
+- **IDE Integration**: Install command for multiple IDEs
+
 ## Installation
 
 ```bash
+# Using npm/npx (recommended)
+npx @pleaseai/mcp index <tool-sources>
+npx @pleaseai/mcp search "query"
+npx @pleaseai/mcp serve
+
+# Development setup
 bun install
 bun run build
 ```
@@ -46,16 +53,20 @@ Build a search index from tool definitions:
 
 ```bash
 # Index without embeddings (faster, BM25/regex only)
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json --no-embeddings
+npx @pleaseai/mcp index tools.json --no-embeddings
 
-# Index with local embeddings (default)
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json
+# Index with local embeddings (default: local:minilm)
+npx @pleaseai/mcp index tools.json
 
-# Index with OpenAI embeddings
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json -p openai
+# Index with specific provider
+npx @pleaseai/mcp index tools.json -p local:mdbr-leaf
+npx @pleaseai/mcp index tools.json -p api:openai
+
+# Custom output path (default: .please/mcp/index.json)
+npx @pleaseai/mcp index tools.json -o ./my-index.json
 
 # Force overwrite existing index
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json -f
+npx @pleaseai/mcp index tools.json -f
 ```
 
 ### Search Tools
@@ -64,19 +75,19 @@ Search for tools in the index:
 
 ```bash
 # BM25 search (default)
-bun apps/cli/dist/index.js search "file operations"
+npx @pleaseai/mcp search "file operations"
 
 # Regex search
-bun apps/cli/dist/index.js search "read.*file" --mode regex
+npx @pleaseai/mcp search "read.*file" --mode regex
 
 # Semantic search
-bun apps/cli/dist/index.js search "tools for sending messages" --mode embedding
+npx @pleaseai/mcp search "tools for sending messages" --mode embedding
 
 # Limit results
-bun apps/cli/dist/index.js search "database" -k 5
+npx @pleaseai/mcp search "database" -k 5
 
 # JSON output
-bun apps/cli/dist/index.js search "database" --format json
+npx @pleaseai/mcp search "database" --format json
 ```
 
 ### Start MCP Server
@@ -84,14 +95,44 @@ bun apps/cli/dist/index.js search "database" --format json
 Start the MCP server for tool search:
 
 ```bash
-# stdio transport (default)
-bun apps/cli/dist/index.js serve
+# Default (stdio transport, reads from .please/mcp/index.json)
+npx @pleaseai/mcp serve
+
+# Or just (serve is the default command)
+npx @pleaseai/mcp
 
 # Specify index path
-bun apps/cli/dist/index.js serve -i ./data/index.json
+npx @pleaseai/mcp serve -i ./data/index.json
 
 # Set default search mode
-bun apps/cli/dist/index.js serve -m embedding
+npx @pleaseai/mcp serve -m embedding
+```
+
+### Install to IDE
+
+Install MCP server configuration to your IDE:
+
+```bash
+# Claude Code (default, creates .mcp.json)
+npx @pleaseai/mcp install
+
+# Claude Desktop
+npx @pleaseai/mcp install --ide claude-desktop
+
+# Cursor
+npx @pleaseai/mcp install --ide cursor
+
+# VS Code
+npx @pleaseai/mcp install --ide vscode
+
+# Gemini CLI
+npx @pleaseai/mcp install --ide gemini
+
+# OpenAI Codex
+npx @pleaseai/mcp install --ide codex
+
+# Preview without writing
+npx @pleaseai/mcp install --dry-run
 ```
 
 ## Development
@@ -109,6 +150,9 @@ bun run build --filter=@pleaseai/mcp-core
 # Development mode (watch)
 bun run dev
 
+# Run tests
+bun run test
+
 # Type check
 bun run typecheck
 
@@ -122,22 +166,21 @@ bun run clean
 
 Core search engine with:
 - Search strategies (Regex, BM25, Embedding)
-- Embedding providers (Local, OpenAI, Voyage AI)
+- Embedding providers (Local MiniLM, Local MDBR-Leaf, OpenAI, Voyage AI)
 - Index management (loader, builder, storage)
 
-### @pleaseai/mcp-server
+### @pleaseai/mcp
 
-MCP server exposing:
+CLI + MCP server exposing:
+- `index` - Build search index from tool definitions
+- `search` - Search for tools
+- `serve` - Start MCP server (default command)
+- `install` - Install to IDE configuration
+
+MCP tools:
 - `tool_search` - Search with query, mode, top_k, threshold
 - `tool_search_info` - Get index metadata
 - `tool_search_list` - List all indexed tools
-
-### @pleaseai/mcp-cli
-
-CLI commands:
-- `index` - Build search index from tool definitions
-- `search` - Search for tools
-- `serve` - Start MCP server
 
 ## MCP Server Tools
 
@@ -165,15 +208,32 @@ List all tools in the index.
 
 ## Configuration
 
+### Default Paths
+
+- **Index file**: `.please/mcp/index.json`
+- **Search mode**: `bm25`
+- **Embedding provider**: `local:minilm`
+
 ### Environment Variables
 
 ```bash
-# OpenAI API Key (for OpenAI embedding provider)
+# OpenAI API Key (for api:openai embedding provider)
 OPENAI_API_KEY=sk-...
 
-# Voyage AI API Key (for Voyage embedding provider)
+# Voyage AI API Key (for api:voyage embedding provider)
 VOYAGE_API_KEY=pa-...
 ```
+
+### IDE Config Locations
+
+| IDE | Config Path |
+|-----|-------------|
+| Claude Code | `.mcp.json` (project root) |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Gemini CLI | `~/.gemini/settings.json` |
+| OpenAI Codex | `~/.codex/config.toml` |
 
 ## Tool Definition Format
 

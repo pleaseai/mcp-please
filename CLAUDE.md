@@ -20,6 +20,9 @@ bun run dev
 # Type check
 bun run typecheck
 
+# Run tests
+bun run test
+
 # Clean build artifacts
 bun run clean
 ```
@@ -28,32 +31,31 @@ bun run clean
 
 ```bash
 # Index tools (without embeddings - faster)
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json --no-embeddings
+bun packages/mcp/dist/cli.js index packages/mcp/examples/tools.json --no-embeddings
 
 # Index with local embeddings
-bun apps/cli/dist/index.js index apps/cli/examples/tools.json
+bun packages/mcp/dist/cli.js index packages/mcp/examples/tools.json
 
 # Search tools
-bun apps/cli/dist/index.js search "file operations"
-bun apps/cli/dist/index.js search "read.*file" --mode regex
-bun apps/cli/dist/index.js search "tools for sending messages" --mode embedding
+bun packages/mcp/dist/cli.js search "file operations"
+bun packages/mcp/dist/cli.js search "read.*file" --mode regex
+bun packages/mcp/dist/cli.js search "tools for sending messages" --mode embedding
 
 # Start MCP server
-bun apps/cli/dist/index.js serve
+bun packages/mcp/dist/cli.js serve
+
+# Install to IDE
+bun packages/mcp/dist/cli.js install --ide claude-code --dry-run
 ```
 
 ## Architecture
 
-This is a Turborepo monorepo with three packages that implement MCP tool search functionality.
+This is a Turborepo monorepo with two packages that implement MCP tool search functionality.
 
 ### Package Dependency Graph
 
 ```
-@pleaseai/mcp-cli (apps/cli)
-    ├── @pleaseai/mcp-server
-    └── @pleaseai/mcp-core
-
-@pleaseai/mcp-server (packages/server)
+@pleaseai/mcp (packages/mcp)
     └── @pleaseai/mcp-core
 
 @pleaseai/mcp-core (packages/core)
@@ -73,7 +75,8 @@ The search engine with three main subsystems:
 
 2. **Embedding Providers** (`src/embedding/`) - Provider pattern implementation
    - `EmbeddingProvider` interface: `initialize()`, `embed()`, `embedBatch()`, `dispose()`
-   - `LocalEmbeddingProvider`: all-MiniLM-L6-v2 via transformers.js
+   - `LocalEmbeddingProvider`: all-MiniLM-L6-v2 via transformers.js (384 dims)
+   - `MDBRLeafEmbeddingProvider`: MongoDB MDBR-Leaf-IR (256 dims)
    - `OpenAIEmbeddingProvider`: OpenAI API
    - `VoyageAIEmbeddingProvider`: Voyage AI API
    - `EmbeddingProviderRegistry`: Factory for creating providers
@@ -90,22 +93,30 @@ The search engine with three main subsystems:
 - `IndexedTool`: Tool with precomputed `searchableText`, `tokens`, and optional `embedding`
 - `ToolReference`: Search result with name, description, score, matchType
 - `SearchMode`: `'regex' | 'bm25' | 'embedding'`
+- `EmbeddingProviderType`: `'local:minilm' | 'local:mdbr-leaf' | 'api:openai' | 'api:voyage'`
 
-### Server Package (`packages/server`)
+### MCP Package (`packages/mcp`)
 
+Combined CLI + MCP server package:
+
+**CLI Commands** (`src/commands/`):
+- `index-cmd.ts`: Build search index from tool definition files
+- `search.ts`: Query the index
+- `serve.ts`: Start MCP server
+- `install.ts`: Install to IDE configuration
+
+**Server** (`src/server.ts`):
 MCP protocol server exposing three tools:
 - `tool_search`: Search with query, mode, top_k, threshold
 - `tool_search_info`: Get index metadata
 - `tool_search_list`: Paginated tool listing
 
+**Constants** (`src/constants.ts`):
+- `DEFAULT_INDEX_PATH`: `.please/mcp/index.json`
+- `DEFAULT_SEARCH_MODE`: `bm25`
+- `DEFAULT_EMBEDDING_PROVIDER`: `local:minilm`
+
 Uses `@modelcontextprotocol/sdk` for MCP protocol implementation with stdio transport.
-
-### CLI Package (`apps/cli`)
-
-Commander-based CLI with three commands:
-- `index`: Build search index from tool definition files
-- `search`: Query the index
-- `serve`: Start MCP server
 
 ## Environment Variables
 

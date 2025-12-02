@@ -1,7 +1,7 @@
 {
   "name": "@pleaseai/mcp",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "MCP server and CLI for tool search",
   "exports": {
     ".": {
@@ -44,5 +44,8 @@
     "eslint": "^9.39.0",
     "tsup": "catalog:",
     "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "tag": "beta"
   }
 }
