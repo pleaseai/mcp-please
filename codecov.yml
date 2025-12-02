@@ -1,0 +1,43 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: core
+      paths:
+        - packages/core/src/**
+      carryforward: true
+    - name: mcp
+      paths:
+        - packages/mcp/src/**
+      carryforward: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+  individual_components:
+    - component_id: core
+      name: "@pleaseai/mcp-core"
+      paths:
+        - packages/core/src/**
+    - component_id: mcp
+      name: "@pleaseai/mcp"
+      paths:
+        - packages/mcp/src/**
