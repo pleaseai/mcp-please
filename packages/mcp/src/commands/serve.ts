@@ -90,21 +90,12 @@ export function createServeCommand(): Command {
           spinner.text = 'Building index...'
           const indexedTools = indexBuilder.buildIndex(tools)
 
-          // Generate embeddings if using embedding mode
-          if (defaultMode === 'embedding' && autoIndexEmbeddingProvider) {
+          // Generate embeddings if using embedding mode using IndexManager's centralized method
+          if (defaultMode === 'embedding' && indexManager.getEmbeddingProvider()) {
             const total = indexedTools.length
-            const batchSize = 32
-
-            for (let i = 0; i < total; i += batchSize) {
-              const batch = indexedTools.slice(i, i + batchSize)
-              const texts = batch.map(t => t.searchableText)
-              const embeddings = await autoIndexEmbeddingProvider.embedBatch(texts)
-
-              for (let j = 0; j < batch.length; j++) {
-                batch[j].embedding = embeddings[j]
-                spinner.text = `Generating embeddings: ${i + j + 1}/${total}`
-              }
-            }
+            await indexManager.generateEmbeddingsFor(indexedTools, (current, _total, _toolName) => {
+              spinner.text = `Generating embeddings: ${current}/${total}`
+            })
           }
 
           // Save index

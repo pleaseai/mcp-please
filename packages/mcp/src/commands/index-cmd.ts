@@ -139,23 +139,12 @@ export function createIndexCommand(): Command {
         spinner.text = 'Building index...'
         const indexedTools = indexBuilder.buildIndex(tools)
 
-        // Generate embeddings if requested
-        const embeddingProvider = indexManager.getEmbeddingProvider()
-        if (options.embeddings && embeddingProvider) {
-          const provider = embeddingProvider
+        // Generate embeddings if requested using IndexManager's centralized method
+        if (options.embeddings && indexManager.getEmbeddingProvider()) {
           const total = indexedTools.length
-          const batchSize = 32
-
-          for (let i = 0; i < total; i += batchSize) {
-            const batch = indexedTools.slice(i, i + batchSize)
-            const texts = batch.map(t => t.searchableText)
-            const embeddings = await provider.embedBatch(texts)
-
-            for (let j = 0; j < batch.length; j++) {
-              batch[j].embedding = embeddings[j]
-              spinner.text = `Generating embeddings: ${i + j + 1}/${total}`
-            }
-          }
+          await indexManager.generateEmbeddingsFor(indexedTools, (current, _total, _toolName) => {
+            spinner.text = `Generating embeddings: ${current}/${total}`
+          })
         }
 
         // Save index

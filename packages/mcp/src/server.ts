@@ -469,10 +469,30 @@ Common Errors:
           })
 
           return {
-            content: result.content.map(c => ({
-              type: c.type as 'text',
-              text: c.text ?? (c.data ? `[Binary data: ${c.mimeType}]` : ''),
-            })),
+            content: result.content.map((c) => {
+              // Transform content blocks based on type
+              // Binary data (type='data') without text is converted to text representation
+              // Other types are preserved with proper type narrowing
+              if (c.type === 'data' && c.data && !c.text) {
+                return {
+                  type: 'text' as const,
+                  text: `[Binary data: ${c.mimeType}]`,
+                }
+              }
+              // For image/audio/resource types with binary data, preserve them
+              if (c.type === 'image' && c.data && c.mimeType) {
+                return {
+                  type: 'image' as const,
+                  data: c.data,
+                  mimeType: c.mimeType,
+                }
+              }
+              // Default: treat as text content
+              return {
+                type: 'text' as const,
+                text: c.text ?? '',
+              }
+            }),
             isError: result.isError,
           }
         }

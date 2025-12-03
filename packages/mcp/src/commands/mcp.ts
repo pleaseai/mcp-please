@@ -592,8 +592,12 @@ function createAuthCommand(): Command {
                   serversNeedingConfig.push({ name, config, scope, path })
                 }
               }
-              catch {
+              catch (discoveryErr) {
                 // Discovery failed - assume no auth required
+                // Log error in debug mode to aid troubleshooting
+                if (process.env.DEBUG) {
+                  console.error(`[debug] OAuth discovery failed for ${name}:`, discoveryErr instanceof Error ? discoveryErr.message : String(discoveryErr))
+                }
               }
             }
 
