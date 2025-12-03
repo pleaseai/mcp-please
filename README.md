@@ -31,9 +31,16 @@ mcp-please/
   - **api:openai**: OpenAI Embeddings API
   - **api:voyage**: Voyage AI embeddings
 
-- **Tool Source**: Load tool definitions from JSON/YAML files
+- **Tool Sources**:
+  - Load tool definitions from JSON/YAML files
+  - Auto-discover tools from configured MCP servers
+  - OAuth 2.1 authentication support for remote MCP servers
 
-- **MCP Server**: Expose `tool_search` capability via MCP protocol
+- **MCP Server**: Full MCP protocol implementation with:
+  - `search_tools` - Search indexed tools
+  - `get_tool` - Get detailed tool schema
+  - `call_tool` - Execute tools on source MCP servers
+  - `tool_search_info` / `list_tools` - Index metadata
 
 - **IDE Integration**: Install command for multiple IDEs
 
@@ -54,24 +61,33 @@ bun run build
 
 ### Index Tools
 
-Build a search index from tool definitions:
+Build a search index from tool definitions or MCP servers:
 
 ```bash
-# Index without embeddings (faster, BM25/regex only)
-npx @pleaseai/mcp index tools.json --no-embeddings
+# Index from configured MCP servers (reads from .please/mcp.json)
+npx @pleaseai/mcp index
 
-# Index with local embeddings (default: local:minilm)
+# Index from specific JSON/YAML files
 npx @pleaseai/mcp index tools.json
 
+# Index without embeddings (faster, BM25/regex only)
+npx @pleaseai/mcp index --no-embeddings
+
+# Index with local embeddings (default: local:minilm)
+npx @pleaseai/mcp index
+
 # Index with specific provider
-npx @pleaseai/mcp index tools.json -p local:mdbr-leaf
-npx @pleaseai/mcp index tools.json -p api:openai
+npx @pleaseai/mcp index -p local:mdbr-leaf
+npx @pleaseai/mcp index -p api:openai
+
+# Exclude specific MCP servers
+npx @pleaseai/mcp index --exclude server1,server2
 
 # Custom output path (default: .please/mcp/index.json)
-npx @pleaseai/mcp index tools.json -o ./my-index.json
+npx @pleaseai/mcp index -o ./my-index.json
 
 # Force overwrite existing index
-npx @pleaseai/mcp index tools.json -f
+npx @pleaseai/mcp index -f
 ```
 
 ### Search Tools
@@ -230,22 +246,24 @@ Core search engine with:
 ### @pleaseai/mcp
 
 CLI + MCP server exposing:
-- `index` - Build search index from tool definitions
+- `index` - Build search index from tool definitions or MCP servers
 - `search` - Search for tools
 - `serve` - Start MCP server (default command)
 - `install` - Install to IDE configuration
 - `mcp` - Manage MCP server configurations
 
 MCP tools:
-- `tool_search` - Search with query, mode, top_k, threshold
+- `search_tools` - Search with query, mode, top_k, threshold
+- `get_tool` - Get detailed tool schema and metadata
+- `call_tool` - Execute tool on source MCP server
 - `tool_search_info` - Get index metadata
-- `tool_search_list` - List all indexed tools
+- `list_tools` - List all indexed tools with pagination
 
 ## MCP Server Tools
 
-### `tool_search`
+### `search_tools`
 
-Search for tools using regex, BM25, or semantic search.
+Search for tools using regex, BM25, or semantic search. Returns matching tools ranked by relevance.
 
 **Parameters:**
 - `query` (string, required): Search query string
@@ -253,17 +271,61 @@ Search for tools using regex, BM25, or semantic search.
 - `top_k` (number, optional): Maximum results to return (default: 10)
 - `threshold` (number, optional): Minimum score threshold 0-1 (default: 0)
 
+### `get_tool`
+
+Get detailed information about a specific tool including its input schema.
+
+**Parameters:**
+- `name` (string, required): Tool name from search results
+
+**Response:**
+- `name`: Full tool name (format: `server__toolName`)
+- `description`: What the tool does
+- `requiredFields`: Array of required parameter names
+- `parameters`: Array of all parameters with name, type, required flag, and description
+- `inputSchema`: Complete JSON Schema for validation
+
+### `call_tool`
+
+Execute a tool on its source MCP server.
+
+**Parameters:**
+- `name` (string, required): Tool name from search/get results
+- `arguments` (object, optional): Arguments matching the tool's inputSchema
+
+**Workflow:** `search_tools` → `get_tool` → `call_tool`
+
 ### `tool_search_info`
 
 Get information about the tool search index.
 
-### `tool_search_list`
+### `list_tools`
 
-List all tools in the index.
+List all tools in the index with pagination.
 
 **Parameters:**
 - `limit` (number, optional): Maximum tools to return (default: 100)
 - `offset` (number, optional): Pagination offset (default: 0)
+
+## OAuth Authentication
+
+MCP Please supports OAuth 2.1 authentication for remote MCP servers that require it.
+
+### How it works
+
+1. When indexing or calling tools on an OAuth-protected server, the CLI will automatically detect the authentication requirement
+2. A browser window opens for you to complete the OAuth flow
+3. Tokens are securely stored in `~/.please/oauth/` for future use
+4. Token refresh is handled automatically
+
+### Supported flows
+
+- Authorization Code with PKCE (recommended)
+- Token refresh for long-lived sessions
+
+### Token storage
+
+OAuth tokens are stored per-server in `~/.please/oauth/<server-name>.json`. These files are automatically managed and should not be edited manually.
 
 ## Configuration
 
