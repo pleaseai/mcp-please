@@ -84,9 +84,8 @@ async function createTransport(
   }
 
   if (transportType === 'sse') {
-    const sseOptions: { eventSourceInit?: { headers: Record<string, string> }, requestInit?: { headers: Record<string, string> } } = {}
+    const sseOptions: { requestInit?: RequestInit } = {}
     if (Object.keys(headers).length > 0) {
-      sseOptions.eventSourceInit = { headers }
       sseOptions.requestInit = { headers }
     }
     return new SSEClientTransport(new URL(config.url), sseOptions)
@@ -149,7 +148,7 @@ export async function callToolOnMcpServer(options: CallToolOptions): Promise<Cal
 
     return {
       content: result.content as CallToolResult['content'],
-      isError: result.isError,
+      isError: result.isError as boolean | undefined,
     }
   }
   catch (error) {

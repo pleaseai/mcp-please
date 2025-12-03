@@ -140,8 +140,9 @@ export function createIndexCommand(): Command {
         const indexedTools = indexBuilder.buildIndex(tools)
 
         // Generate embeddings if requested
-        if (options.embeddings && indexManager.embeddingProvider) {
-          const provider = indexManager.embeddingProvider
+        const embeddingProvider = indexManager.getEmbeddingProvider()
+        if (options.embeddings && embeddingProvider) {
+          const provider = embeddingProvider
           const total = indexedTools.length
           const batchSize = 32
 

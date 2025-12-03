@@ -6,7 +6,7 @@ import {
   IndexManager,
   SearchOrchestrator,
 } from '@pleaseai/mcp-core'
-import { z } from 'zod/v3'
+import { z } from 'zod'
 import { callToolOnMcpServer } from './utils/mcp-client.js'
 import { getAllMcpServers } from './utils/mcp-config-loader.js'
 import { OAuthManager, TokenStorage } from './utils/oauth/index.js'
@@ -364,7 +364,7 @@ Common Errors:
 - Authentication required: OAuth session expired or not configured`,
         inputSchema: {
           name: z.string().describe('The name of the tool to execute (from search_tools or get_tool)'),
-          arguments: z.record(z.unknown()).optional().default({}).describe('Arguments matching the inputSchema from get_tool. Include ALL required fields.'),
+          arguments: z.record(z.string(), z.unknown()).optional().default({}).describe('Arguments matching the inputSchema from get_tool. Include ALL required fields.'),
         },
       },
       async ({ name, arguments: args }) => {

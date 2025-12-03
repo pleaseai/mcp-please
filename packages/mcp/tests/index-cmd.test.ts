@@ -28,7 +28,7 @@ describe('index command', () => {
   test('should show help', async () => {
     const result = await $`bun ${CLI_PATH} index --help`.text()
 
-    expect(result).toContain('Build search index from tool definitions')
+    expect(result).toContain('Build search index from MCP servers or tool definition files')
     expect(result).toContain('--provider')
     expect(result).toContain('local:minilm')
     expect(result).toContain('local:mdbr-leaf')
