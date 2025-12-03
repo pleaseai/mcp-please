@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
 import {
   createEmbeddingProvider,
   EmbeddingProviderRegistry,
@@ -6,7 +6,13 @@ import {
   MiniLMEmbeddingProvider,
 } from '../src/embedding/index.js'
 
-describe('MiniLMEmbeddingProvider', () => {
+// Skip embedding tests in CI - they require model downloads
+const skipInCI = process.env.CI === 'true'
+
+// Set default timeout for model loading
+setDefaultTimeout(60000)
+
+describe.skipIf(skipInCI)('MiniLMEmbeddingProvider', () => {
   let provider: MiniLMEmbeddingProvider
 
   beforeAll(async () => {
@@ -64,9 +70,9 @@ describe('MiniLMEmbeddingProvider', () => {
     // Similar texts should have higher similarity
     expect(sim12).toBeGreaterThan(sim13)
   })
-}, 60000)
+})
 
-describe('MDBRLeafEmbeddingProvider', () => {
+describe.skipIf(skipInCI)('MDBRLeafEmbeddingProvider', () => {
   let provider: MDBRLeafEmbeddingProvider
 
   beforeAll(async () => {
@@ -121,7 +127,7 @@ describe('MDBRLeafEmbeddingProvider', () => {
 
     expect(sim12).toBeGreaterThan(sim13)
   })
-}, 60000)
+})
 
 describe('EmbeddingProviderRegistry', () => {
   test('should list available types', () => {

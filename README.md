@@ -1,5 +1,10 @@
 # MCP Please ( MCP Tool Search )
 
+[![npm version](https://img.shields.io/npm/v/@pleaseai/mcp.svg)](https://www.npmjs.com/package/@pleaseai/mcp)
+[![npm version](https://img.shields.io/npm/v/@pleaseai/mcp-core.svg)](https://www.npmjs.com/package/@pleaseai/mcp-core)
+[![codecov](https://codecov.io/gh/pleaseai/mcp-please/graph/badge.svg)](https://codecov.io/gh/pleaseai/mcp-please)
+[![code style](https://antfu.me/badge-code-style.svg)](https://github.com/antfu/eslint-config)
+
 MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **semantic (embedding)** search.
 
 ## Monorepo Structure

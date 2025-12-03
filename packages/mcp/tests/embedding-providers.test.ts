@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { $ } from 'bun'
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
+
+// Skip embedding tests in CI - they require model downloads
+const skipInCI = process.env.CI === 'true'
+
+// Set default timeout for model loading
+setDefaultTimeout(60000)
 
 const CLI_PATH = join(import.meta.dir, '../dist/cli.js')
 const EXAMPLES_PATH = join(import.meta.dir, '../examples/tools.json')
@@ -18,7 +24,7 @@ function extractJson(output: string): unknown {
   return JSON.parse(jsonMatch[0])
 }
 
-describe('embedding providers', () => {
+describe.skipIf(skipInCI)('embedding providers', () => {
   beforeAll(() => {
     if (!existsSync(TEST_OUTPUT_DIR)) {
       mkdirSync(TEST_OUTPUT_DIR, { recursive: true })
