@@ -57,8 +57,10 @@ export class TokenStorage {
 
   /**
    * Load saved session from disk
+   * @param serverUrl - The server URL to load session for
+   * @param includeExpired - If true, returns expired sessions (for refresh token use)
    */
-  async loadSession(serverUrl: string): Promise<OAuthSession | undefined> {
+  async loadSession(serverUrl: string, includeExpired = false): Promise<OAuthSession | undefined> {
     const tokenPath = this.getTokenPath(serverUrl)
 
     if (!existsSync(tokenPath)) {
@@ -69,8 +71,8 @@ export class TokenStorage {
       const content = await readFile(tokenPath, 'utf-8')
       const session = JSON.parse(content) as OAuthSession
 
-      // Check if token is expired
-      if (session.expiresAt && Date.now() >= session.expiresAt) {
+      // Check if token is expired (unless includeExpired is true)
+      if (!includeExpired && session.expiresAt && Date.now() >= session.expiresAt) {
         return undefined
       }
 
@@ -148,11 +150,31 @@ export class TokenStorage {
   }
 
   /**
-   * Check if a valid session exists for a server
+   * Check if a valid (non-expired) session exists for a server
    */
   async hasValidSession(serverUrl: string): Promise<boolean> {
     const session = await this.loadSession(serverUrl)
     return session !== undefined
+  }
+
+  /**
+   * Check if any session exists (including expired ones with refresh tokens)
+   */
+  async hasSession(serverUrl: string): Promise<boolean> {
+    const tokenPath = this.getTokenPath(serverUrl)
+    if (!existsSync(tokenPath)) {
+      return false
+    }
+
+    try {
+      const content = await readFile(tokenPath, 'utf-8')
+      const session = JSON.parse(content) as OAuthSession
+      // Session exists if we have tokens (can be refreshed even if expired)
+      return !!(session.tokens && (session.tokens.access_token || session.tokens.refresh_token))
+    }
+    catch {
+      return false
+    }
   }
 
   /**

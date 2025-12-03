@@ -2,7 +2,14 @@
   "mcpServers": {
     "nuxt-ui-remote": {
       "transport": "http",
-      "url": "https://nuxt-ui-remote.example.com/api"
+      "url": "https://ui.nuxt.com/mcp"
+    },
+    "asana": {
+      "transport": "sse",
+      "url": "https://mcp.asana.com/sse",
+      "authorization": {
+        "type": "oauth2"
+      }
     }
   }
 }

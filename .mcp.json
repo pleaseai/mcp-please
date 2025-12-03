@@ -1,3 +1,13 @@
 {
-
+  "mcpServers": {
+    "pleaseai-mcp": {
+      "command": "node",
+      "args": [
+        "packages/mcp/dist/cli.js",
+        "serve",
+        "--mode",
+        "embedding"
+      ]
+    }
+  }
 }

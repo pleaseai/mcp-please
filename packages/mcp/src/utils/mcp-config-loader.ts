@@ -121,8 +121,8 @@ export async function loadToolsFromMcpServers(options: LoadToolsOptions = {}): P
       if (config.authorization?.type === 'oauth2' && config.url) {
         options.onProgress?.(name, 'authenticating')
 
-        // Check for existing token
-        const hasSession = await tokenStorage.hasValidSession(config.url)
+        // Check for existing token (including expired ones with refresh tokens)
+        const hasSession = await tokenStorage.hasSession(config.url)
 
         if (hasSession) {
           const oauthManager = new OAuthManager({
@@ -130,6 +130,7 @@ export async function loadToolsFromMcpServers(options: LoadToolsOptions = {}): P
             serverUrl: config.url,
             scopes: config.authorization.oauth?.scopes,
           })
+          // getAccessToken will automatically refresh if needed
           accessToken = await oauthManager.getAccessToken()
         }
         else {

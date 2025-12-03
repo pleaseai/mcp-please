@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
+import { confirm } from '@inquirer/prompts'
 import chalk from 'chalk'
 import Table from 'cli-table3'
 import { Command } from 'commander'
@@ -534,39 +535,111 @@ function createAuthCommand(): Command {
         // List mode
         if (options.list) {
           const servers = getAllServers()
-          const oauthServers = Array.from(servers.entries())
-            .filter(([_, s]) => s.config.authorization?.type === 'oauth2')
 
-          if (oauthServers.length === 0) {
-            info('No OAuth servers configured.')
+          // Filter to remote servers (those with URLs)
+          const remoteServers = Array.from(servers.entries())
+            .filter(([_, s]) => s.config.url)
+
+          if (remoteServers.length === 0) {
+            info('No remote servers configured.')
             return
           }
 
-          console.log(chalk.bold('\nOAuth Authentication Status\n'))
+          console.log(chalk.bold('\nAuthentication Status\n'))
 
           const table = new Table({
-            head: [chalk.cyan('Server'), chalk.cyan('URL'), chalk.cyan('Status')],
-            colWidths: [20, 40, 15],
+            head: [chalk.cyan('Server'), chalk.cyan('URL'), chalk.cyan('Auth Type'), chalk.cyan('Status')],
+            colWidths: [18, 32, 14, 18],
             style: { head: [], border: [] },
           })
 
-          for (const [name, { config }] of oauthServers) {
+          // Track servers that need OAuth config
+          const serversNeedingConfig: Array<{ name: string, config: McpServerConfig, scope: ScopeType, path: string }> = []
+
+          for (const [name, serverInfo] of remoteServers) {
+            const { config, scope, path } = serverInfo
             if (!config.url)
               continue
 
-            const hasSession = await storage.hasValidSession(config.url)
-            const status = hasSession
-              ? chalk.green('Authenticated')
-              : chalk.yellow('Not authenticated')
+            let authType = 'None'
+            let status = '-'
+
+            // Check if OAuth is explicitly configured
+            if (config.authorization?.type === 'oauth2') {
+              authType = 'OAuth 2.0'
+              const hasSession = await storage.hasValidSession(config.url)
+              status = hasSession
+                ? chalk.green('Authenticated')
+                : chalk.yellow('Not authenticated')
+            }
+            else if (config.authorization?.type === 'bearer') {
+              authType = 'Bearer'
+              status = chalk.green('Configured')
+            }
+            else {
+              // No auth configured - probe for OAuth requirement
+              try {
+                const manager = new OAuthManager({
+                  serverName: name,
+                  serverUrl: config.url,
+                })
+                const resourceMeta = await manager.discoverProtectedResource()
+
+                if (resourceMeta) {
+                  // OAuth detected but not configured
+                  authType = chalk.yellow('OAuth 2.0*')
+                  status = chalk.yellow('Not configured')
+                  serversNeedingConfig.push({ name, config, scope, path })
+                }
+              }
+              catch {
+                // Discovery failed - assume no auth required
+              }
+            }
 
             table.push([
               chalk.white(name),
-              truncate(config.url, 35),
+              truncate(config.url, 28),
+              authType,
               status,
             ])
           }
 
           console.log(table.toString())
+
+          if (serversNeedingConfig.length > 0) {
+            console.log(chalk.dim('\n* OAuth detected but not configured\n'))
+
+            // Prompt to add OAuth config for detected servers
+            for (const { name, scope: currentScope, path: currentPath } of serversNeedingConfig) {
+              const shouldAdd = await confirm({
+                message: `Server "${name}" requires OAuth. Add authorization config to ${getScopeName(currentScope)}?`,
+                default: true,
+              })
+
+              if (shouldAdd) {
+                // Update the original config file where the server is defined
+                const existingConfig = readConfig(currentPath)
+
+                // Add authorization to existing server config
+                existingConfig.mcpServers[name] = {
+                  ...existingConfig.mcpServers[name],
+                  authorization: { type: 'oauth2' as const },
+                }
+
+                writeConfig(currentPath, existingConfig)
+
+                // Ensure gitignore for local scope
+                if (currentScope === 'local') {
+                  ensureGitignore()
+                }
+
+                success(`Added OAuth authorization config for "${name}" to ${getScopeName(currentScope)}`)
+                info(`Run 'mcp auth ${name}' to authenticate`)
+              }
+            }
+          }
+
           return
         }
 

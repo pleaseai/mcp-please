@@ -40,6 +40,18 @@ export interface OAuthClientInfo {
 }
 
 /**
+ * OAuth dynamic client registration request (RFC 7591)
+ */
+export interface OAuthClientRegistrationRequest {
+  client_name: string
+  redirect_uris: string[]
+  grant_types?: string[]
+  response_types?: string[]
+  token_endpoint_auth_method?: string
+  code_challenge_method?: 'plain' | 'S256'
+}
+
+/**
  * OAuth token response
  */
 export interface OAuthTokenResponse {

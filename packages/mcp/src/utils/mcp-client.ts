@@ -114,3 +114,46 @@ function convertMcpToolToDefinition(tool: Tool, serverName: string): ToolDefinit
     },
   }
 }
+
+export interface CallToolOptions {
+  name: string
+  config: McpServerConfig
+  accessToken?: string
+  toolName: string
+  arguments: Record<string, unknown>
+}
+
+export interface CallToolResult {
+  content: Array<{ type: string, text?: string, data?: string, mimeType?: string }>
+  isError?: boolean
+}
+
+/**
+ * Call a tool on an MCP server
+ */
+export async function callToolOnMcpServer(options: CallToolOptions): Promise<CallToolResult> {
+  const { name, config, accessToken, toolName, arguments: args } = options
+
+  const client = new Client(
+    { name: `mcp-search-client-${name}`, version: '1.0.0' },
+    { capabilities: {} },
+  )
+
+  try {
+    const transport = await createTransport(config, accessToken)
+    await client.connect(transport)
+
+    const result = await client.callTool({ name: toolName, arguments: args })
+
+    await client.close()
+
+    return {
+      content: result.content as CallToolResult['content'],
+      isError: result.isError,
+    }
+  }
+  catch (error) {
+    await client.close().catch(() => {})
+    throw error
+  }
+}

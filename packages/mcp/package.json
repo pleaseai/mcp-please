@@ -29,6 +29,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.2.1",
     "@modelcontextprotocol/sdk": "catalog:",
     "@pleaseai/mcp-core": "workspace:*",
     "chalk": "catalog:",

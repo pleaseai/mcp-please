@@ -6,6 +6,7 @@
 import type { Server } from 'node:http'
 import type {
   OAuthClientInfo,
+  OAuthClientRegistrationRequest,
   OAuthConfig,
   OAuthLogger,
   OAuthMetadata,
@@ -165,16 +166,19 @@ export class OAuthManager {
 
     const redirectUri = `http://${this.config.callbackHost}:${this.config.callbackPort}/callback`
 
+    // Build registration request (don't specify PKCE here - it's per-authorization-request)
+    const registrationRequest: OAuthClientRegistrationRequest = {
+      client_name: `mcp-search (${this.config.serverName})`,
+      redirect_uris: [redirectUri],
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'none', // Public client
+    }
+
     const response = await fetch(metadata.registration_endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_name: `mcp-search (${this.config.serverName})`,
-        redirect_uris: [redirectUri],
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
-        token_endpoint_auth_method: 'none', // Public client
-      }),
+      body: JSON.stringify(registrationRequest),
     })
 
     if (!response.ok) {
@@ -192,48 +196,88 @@ export class OAuthManager {
   }
 
   /**
+   * Check if server supports PKCE with S256 method
+   */
+  private serverSupportsPKCE(metadata: OAuthMetadata): boolean {
+    const methods = metadata.code_challenge_methods_supported
+    return Array.isArray(methods) && methods.includes('S256')
+  }
+
+  /**
    * Start local callback server and perform authorization flow
    */
   private async performAuthorizationFlow(
     metadata: OAuthMetadata,
     clientInfo: OAuthClientInfo,
   ): Promise<OAuthTokenResponse> {
-    const { verifier, challenge } = generatePKCE()
     const state = generateState()
     const redirectUri = `http://${this.config.callbackHost}:${this.config.callbackPort}/callback`
+
+    // Check if server supports PKCE
+    const usePKCE = this.serverSupportsPKCE(metadata)
+    let verifier: string | undefined
+    let challenge: string | undefined
+
+    this.logger.info(`PKCE check: code_challenge_methods_supported=${JSON.stringify(metadata.code_challenge_methods_supported)}, usePKCE=${usePKCE}`)
+
+    if (usePKCE) {
+      const pkce = generatePKCE()
+      verifier = pkce.verifier
+      challenge = pkce.challenge
+      this.logger.info('PKCE enabled (server supports S256)')
+    }
+    else {
+      this.logger.info('PKCE disabled (server does not advertise S256 support)')
+    }
 
     // Build authorization URL
     const authUrl = new URL(metadata.authorization_endpoint)
     authUrl.searchParams.set('client_id', clientInfo.client_id)
     authUrl.searchParams.set('redirect_uri', redirectUri)
     authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('code_challenge', challenge)
-    authUrl.searchParams.set('code_challenge_method', 'S256')
     authUrl.searchParams.set('state', state)
+
+    // Only add PKCE parameters if server supports it
+    if (usePKCE && challenge) {
+      authUrl.searchParams.set('code_challenge', challenge)
+      authUrl.searchParams.set('code_challenge_method', 'S256')
+    }
+
+    // Force consent screen to ensure fresh authorization with current PKCE challenge
+    authUrl.searchParams.set('prompt', 'consent')
 
     if (this.config.scopes && this.config.scopes.length > 0) {
       authUrl.searchParams.set('scope', this.config.scopes.join(' '))
     }
 
     this.logger.info(`Starting authorization flow for ${this.config.serverName}`)
-    this.logger.debug(`Authorization URL: ${authUrl.toString()}`)
+    this.logger.info(`Authorization URL: ${authUrl.toString()}`)
 
-    // Start local callback server
-    const authCode = await this.waitForCallback(state)
+    // Start local callback server and open browser with correct URL
+    const authCode = await this.waitForCallback(state, authUrl.toString())
 
     this.logger.info('Authorization code received')
+
+    // Build token exchange parameters
+    const tokenParams: Record<string, string> = {
+      grant_type: 'authorization_code',
+      code: authCode,
+      redirect_uri: redirectUri,
+      client_id: clientInfo.client_id,
+    }
+
+    // Only include code_verifier if PKCE was used
+    if (usePKCE && verifier) {
+      tokenParams.code_verifier = verifier
+    }
+
+    this.logger.info(`Token exchange params: ${JSON.stringify({ ...tokenParams, code: '[redacted]', code_verifier: tokenParams.code_verifier ? '[set]' : '[not set]' })}`)
 
     // Exchange code for tokens
     const tokenResponse = await fetch(metadata.token_endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: authCode,
-        redirect_uri: redirectUri,
-        client_id: clientInfo.client_id,
-        code_verifier: verifier,
-      }),
+      body: new URLSearchParams(tokenParams),
     })
 
     if (!tokenResponse.ok) {
@@ -250,7 +294,7 @@ export class OAuthManager {
   /**
    * Wait for OAuth callback with authorization code
    */
-  private waitForCallback(expectedState: string): Promise<string> {
+  private waitForCallback(expectedState: string, authorizationUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
       let server: Server | undefined
 
@@ -310,17 +354,10 @@ export class OAuthManager {
       server.listen(this.config.callbackPort, () => {
         this.logger.info(`Callback server listening on port ${this.config.callbackPort}`)
 
-        // Build authorization URL again for opening browser
-        const authUrl = new URL(this.metadata!.authorization_endpoint)
-        authUrl.searchParams.set('client_id', this.session?.clientInfo.client_id ?? '')
-        authUrl.searchParams.set('redirect_uri', `http://${this.config.callbackHost}:${this.config.callbackPort}/callback`)
-        authUrl.searchParams.set('response_type', 'code')
-        authUrl.searchParams.set('state', expectedState)
-
-        // Open browser
-        open(authUrl.toString()).catch((err) => {
+        // Open browser with the provided authorization URL (includes PKCE parameters)
+        open(authorizationUrl).catch((err) => {
           this.logger.warn('Failed to open browser automatically:', err)
-          this.logger.info(`Please open this URL in your browser:\n${authUrl.toString()}`)
+          this.logger.info(`Please open this URL in your browser:\n${authorizationUrl}`)
         })
       })
 
@@ -439,6 +476,11 @@ export class OAuthManager {
    * Get current access token, refreshing if necessary
    */
   async getAccessToken(): Promise<string> {
+    // Try to load session including expired ones (for refresh token use)
+    if (!this.session) {
+      this.session = await this.storage.loadSession(this.config.serverUrl, true)
+    }
+
     if (!this.session) {
       return this.authorize()
     }
@@ -455,6 +497,7 @@ export class OAuthManager {
           ? Date.now() + tokens.expires_in * 1000
           : undefined
         await this.storage.saveSession(this.config.serverUrl, this.session)
+        this.logger.info('Token refreshed successfully')
       }
       catch (error) {
         this.logger.warn('Token refresh failed, re-authorizing:', error)

@@ -1,11 +1,13 @@
 import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import fs from 'node:fs'
 import process from 'node:process'
-import { createEmbeddingProvider } from '@pleaseai/mcp-core'
+import { createEmbeddingProvider, IndexBuilder, IndexManager } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
 import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE } from '../constants.js'
 import { McpToolSearchServer } from '../server.js'
-import { error, info } from '../utils/output.js'
+import { getAllMcpServers, loadToolsFromMcpServers } from '../utils/mcp-config-loader.js'
+import { error, info, warn } from '../utils/output.js'
 
 /**
  * Create the serve command
@@ -30,6 +32,85 @@ export function createServeCommand(): Command {
         const port = Number.parseInt(options.port, 10)
         const defaultMode = options.mode as SearchMode
         const providerType = options.provider as EmbeddingProviderType
+        const indexPath = options.index as string
+
+        // Check if index exists, if not create it automatically
+        if (!fs.existsSync(indexPath)) {
+          spinner.text = 'Index not found, creating from MCP servers...'
+
+          const allServers = getAllMcpServers()
+
+          if (allServers.size === 0) {
+            spinner.fail('No index found and no MCP servers configured.')
+            error('Create an index first with: mcp-search index <sources>')
+            error('Or add MCP servers with: mcp-search mcp add')
+            process.exit(1)
+          }
+
+          const indexManager = new IndexManager()
+          const indexBuilder = new IndexBuilder()
+
+          // Setup embedding provider if using embedding mode
+          let autoIndexEmbeddingProvider = null
+          if (defaultMode === 'embedding') {
+            autoIndexEmbeddingProvider = createEmbeddingProvider({ type: providerType })
+            await autoIndexEmbeddingProvider.initialize()
+            indexManager.setEmbeddingProvider(autoIndexEmbeddingProvider)
+          }
+
+          // Load tools from MCP servers
+          const tools = await loadToolsFromMcpServers({
+            onProgress: (serverName, status, toolCount) => {
+              switch (status) {
+                case 'connecting':
+                  spinner.text = `Connecting to ${serverName}...`
+                  break
+                case 'authenticating':
+                  spinner.text = `Authenticating ${serverName}...`
+                  break
+                case 'fetching':
+                  spinner.text = `Fetching tools from ${serverName}...`
+                  break
+                case 'done':
+                  info(`${serverName}: ${toolCount} tools`)
+                  break
+              }
+            },
+            onError: (serverName, err) => {
+              warn(`${serverName}: ${err.message}`)
+            },
+          })
+
+          if (tools.length === 0) {
+            spinner.fail('No tools found from MCP servers.')
+            process.exit(1)
+          }
+
+          // Build index
+          spinner.text = 'Building index...'
+          const indexedTools = indexBuilder.buildIndex(tools)
+
+          // Generate embeddings if using embedding mode
+          if (defaultMode === 'embedding' && autoIndexEmbeddingProvider) {
+            const total = indexedTools.length
+            const batchSize = 32
+
+            for (let i = 0; i < total; i += batchSize) {
+              const batch = indexedTools.slice(i, i + batchSize)
+              const texts = batch.map(t => t.searchableText)
+              const embeddings = await autoIndexEmbeddingProvider.embedBatch(texts)
+
+              for (let j = 0; j < batch.length; j++) {
+                batch[j].embedding = embeddings[j]
+                spinner.text = `Generating embeddings: ${i + j + 1}/${total}`
+              }
+            }
+          }
+
+          // Save index
+          await indexManager.saveIndex(indexedTools, indexPath)
+          info(`Auto-indexed ${indexedTools.length} tools`)
+        }
 
         // Create embedding provider
         const embeddingProvider = createEmbeddingProvider({
@@ -40,7 +121,7 @@ export function createServeCommand(): Command {
         const server = new McpToolSearchServer({
           transport,
           port,
-          indexPath: options.index,
+          indexPath,
           defaultMode,
           embeddingProvider: {
             type: providerType,
