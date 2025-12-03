@@ -16,7 +16,6 @@ data/*
 .env.local
 
 # IDE
-.idea/
 .vscode/
 *.swp
 *.swo
