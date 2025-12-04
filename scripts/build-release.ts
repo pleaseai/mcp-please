@@ -72,13 +72,19 @@ async function main() {
 
     console.log(`  ✓ Created ${binaryName}`)
 
-    // Generate checksum
+    // Generate checksum and write individual .sha256 file
     const checksum = await generateChecksum(outfile)
-    checksums.push(`${checksum}  ${binaryName}`)
+    const checksumLine = `${checksum}  ${binaryName}`
+    checksums.push(checksumLine)
+
+    // Write individual checksum file for homebrew formula
+    const checksumFilePath = `${outfile}.sha256`
+    await Bun.write(checksumFilePath, `${checksumLine}\n`)
+
     console.log(`  ✓ SHA256: ${checksum.slice(0, 16)}...`)
   }
 
-  // Write checksums file
+  // Write combined checksums file
   const checksumsPath = join(OUTPUT_DIR, 'checksums.txt')
   await Bun.write(checksumsPath, `${checksums.join('\n')}\n`)
   console.log()

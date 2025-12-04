@@ -117,7 +117,11 @@ main() {
 
     # Check if we need sudo
     if [ -w "$INSTALL_DIR" ]; then
-        mv "$TEMP_FILE" "$INSTALL_DIR/$BINARY_NAME"
+        if ! mv "$TEMP_FILE" "$INSTALL_DIR/$BINARY_NAME"; then
+            print_error "Failed to install binary to $INSTALL_DIR"
+            rm -f "$TEMP_FILE"
+            exit 1
+        fi
     else
         print_info "Administrator privileges required for installation"
         if ! sudo mv "$TEMP_FILE" "$INSTALL_DIR/$BINARY_NAME"; then

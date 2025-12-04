@@ -134,14 +134,14 @@ jobs:
           VERSION=${{ needs.release-please.outputs.mcp_tag_name }}
           VERSION_NO_V=${VERSION#v}
 
-          # Download checksums
-          curl -L -o darwin-x64.sha256 \
+          # Download checksums (with -f to fail on HTTP errors)
+          curl -fsSL -o darwin-x64.sha256 \
             "https://github.com/${{ github.repository }}/releases/download/${VERSION}/mcp-gateway-darwin-x64.sha256"
-          curl -L -o darwin-arm64.sha256 \
+          curl -fsSL -o darwin-arm64.sha256 \
             "https://github.com/${{ github.repository }}/releases/download/${VERSION}/mcp-gateway-darwin-arm64.sha256"
-          curl -L -o linux-x64.sha256 \
+          curl -fsSL -o linux-x64.sha256 \
             "https://github.com/${{ github.repository }}/releases/download/${VERSION}/mcp-gateway-linux-x64.sha256"
-          curl -L -o linux-arm64.sha256 \
+          curl -fsSL -o linux-arm64.sha256 \
             "https://github.com/${{ github.repository }}/releases/download/${VERSION}/mcp-gateway-linux-arm64.sha256"
 
           # Extract checksums
@@ -153,53 +153,53 @@ jobs:
           # Create or update Formula
           cd homebrew-tap
           cat > mcp-gateway.rb << 'FORMULA_EOF'
-          class McpGateway < Formula
-            desc "MCP server and CLI for searching tools using regex, BM25, or semantic search"
-            homepage "https://github.com/pleaseai/mcp-gateway"
-            version "VERSION_PLACEHOLDER"
-            license "MIT"
+class McpGateway < Formula
+  desc "MCP server and CLI for searching tools using regex, BM25, or semantic search"
+  homepage "https://github.com/pleaseai/mcp-gateway"
+  version "VERSION_PLACEHOLDER"
+  license "MIT"
 
-            on_macos do
-              if Hardware::CPU.arm?
-                url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-darwin-arm64"
-                sha256 "SHA256_DARWIN_ARM64_PLACEHOLDER"
-              else
-                url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-darwin-x64"
-                sha256 "SHA256_DARWIN_X64_PLACEHOLDER"
-              end
-            end
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-darwin-arm64"
+      sha256 "SHA256_DARWIN_ARM64_PLACEHOLDER"
+    else
+      url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-darwin-x64"
+      sha256 "SHA256_DARWIN_X64_PLACEHOLDER"
+    end
+  end
 
-            on_linux do
-              if Hardware::CPU.arm?
-                url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-linux-arm64"
-                sha256 "SHA256_LINUX_ARM64_PLACEHOLDER"
-              else
-                url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-linux-x64"
-                sha256 "SHA256_LINUX_X64_PLACEHOLDER"
-              end
-            end
+  on_linux do
+    if Hardware::CPU.arm?
+      url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-linux-arm64"
+      sha256 "SHA256_LINUX_ARM64_PLACEHOLDER"
+    else
+      url "https://github.com/pleaseai/mcp-gateway/releases/download/vVERSION_PLACEHOLDER/mcp-gateway-linux-x64"
+      sha256 "SHA256_LINUX_X64_PLACEHOLDER"
+    end
+  end
 
-            def install
-              if OS.mac?
-                if Hardware::CPU.arm?
-                  bin.install "mcp-gateway-darwin-arm64" => "mcp-gateway"
-                else
-                  bin.install "mcp-gateway-darwin-x64" => "mcp-gateway"
-                end
-              else
-                if Hardware::CPU.arm?
-                  bin.install "mcp-gateway-linux-arm64" => "mcp-gateway"
-                else
-                  bin.install "mcp-gateway-linux-x64" => "mcp-gateway"
-                end
-              end
-            end
+  def install
+    if OS.mac?
+      if Hardware::CPU.arm?
+        bin.install "mcp-gateway-darwin-arm64" => "mcp-gateway"
+      else
+        bin.install "mcp-gateway-darwin-x64" => "mcp-gateway"
+      end
+    else
+      if Hardware::CPU.arm?
+        bin.install "mcp-gateway-linux-arm64" => "mcp-gateway"
+      else
+        bin.install "mcp-gateway-linux-x64" => "mcp-gateway"
+      end
+    end
+  end
 
-            test do
-              assert_match version.to_s, shell_output("#{bin}/mcp-gateway --version")
-            end
-          end
-          FORMULA_EOF
+  test do
+    assert_match version.to_s, shell_output("#{bin}/mcp-gateway --version")
+  end
+end
+FORMULA_EOF
 
           # Replace placeholders
           sed -i "s/VERSION_PLACEHOLDER/${VERSION_NO_V}/g" mcp-gateway.rb
