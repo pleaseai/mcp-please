@@ -17,8 +17,13 @@ import { error, formatCallError, formatCallResult } from '../utils/output.js'
  */
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = []
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk)
+  try {
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk)
+    }
+  }
+  catch (err) {
+    throw new Error(`Failed to read stdin: ${err instanceof Error ? err.message : String(err)}`)
   }
   return Buffer.concat(chunks).toString('utf-8')
 }

@@ -5,8 +5,13 @@
 
 import type { ToolDefinition } from '@pleaseai/mcp-core'
 
+/**
+ * Valid JSON Schema types
+ */
+type JsonSchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null'
+
 interface JsonSchemaProperty {
-  type?: string
+  type?: JsonSchemaType
   description?: string
   enum?: unknown[]
   default?: unknown
