@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.3-beta.1](https://github.com/pleaseai/mcp-gateway/compare/mcp-v0.2.2-beta.1...mcp-v0.2.3-beta.1) (2025-12-04)
+
+
+### Features
+
+* **embedding:** add dtype option for local embedding providers ([#18](https://github.com/pleaseai/mcp-gateway/issues/18)) ([c55ea4d](https://github.com/pleaseai/mcp-gateway/commit/c55ea4d1bcf617310b02a6bdae571f9c440697f8))
+* **mcp:** add CLI call command with permission check support ([#20](https://github.com/pleaseai/mcp-gateway/issues/20)) ([c5d97d3](https://github.com/pleaseai/mcp-gateway/commit/c5d97d3a9ca75539de662d492a27e1f406c3ab44))
+* **release:** add homebrew and binary distribution support ([#25](https://github.com/pleaseai/mcp-gateway/issues/25)) ([60149b4](https://github.com/pleaseai/mcp-gateway/commit/60149b431164a76f15ab81d879a5789d18f0a741))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/mcp-core bumped to 0.1.4-beta.1
+
 ## [0.2.2-beta.1](https://github.com/pleaseai/mcp-please/compare/mcp-v0.2.1-beta.1...mcp-v0.2.2-beta.1) (2025-12-03)
 
 
