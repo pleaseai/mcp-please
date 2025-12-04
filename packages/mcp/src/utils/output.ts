@@ -136,9 +136,18 @@ export function formatCallResult(result: ExecuteToolSuccess, format: CallOutputF
   switch (format) {
     case 'minimal':
       // Output only text content, one per line
+      // For binary data, show a placeholder similar to server.ts behavior
       return result.result.content
-        .filter(c => c.text)
-        .map(c => c.text)
+        .map((c) => {
+          if (c.text) {
+            return c.text
+          }
+          if (c.type === 'data' && c.data && !c.text) {
+            return `[Binary data: ${c.mimeType ?? 'unknown'}]`
+          }
+          return null
+        })
+        .filter(text => text !== null)
         .join('\n')
 
     case 'json':

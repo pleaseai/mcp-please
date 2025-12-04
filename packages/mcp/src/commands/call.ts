@@ -7,7 +7,7 @@ import type { CallOutputFormat } from '../utils/output.js'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { IndexManager } from '@pleaseai/mcp-core'
-import { Command } from 'commander'
+import { Command, Option } from 'commander'
 import { DEFAULT_INDEX_PATH } from '../constants.js'
 import { createToolExecutor } from '../services/tool-executor.js'
 import { error, formatCallError, formatCallResult } from '../utils/output.js'
@@ -61,7 +61,7 @@ export function createCallCommand(): Command {
     .argument('<tool_name>', 'Tool name (format: server__toolName)')
     .option('-a, --args <json>', 'Tool arguments as JSON string')
     .option('-i, --index <path>', 'Path to index file', DEFAULT_INDEX_PATH)
-    .option('-f, --format <format>', 'Output format: json | minimal', 'json')
+    .addOption(new Option('-f, --format <format>', 'Output format: json | minimal').choices(['json', 'minimal']).default('json'))
     .action(async (toolName: string, options) => {
       try {
         // Parse arguments from --args flag or stdin

@@ -186,6 +186,14 @@ export class ToolExecutor {
 
     // Bearer token authentication
     if (serverConfig.authorization?.type === 'bearer') {
+      if (!serverConfig.authorization.token) {
+        return {
+          success: false,
+          error: 'AUTH_REQUIRED',
+          message: `Bearer token is missing for server '${serverName}'`,
+          hint: 'Check your MCP configuration.',
+        }
+      }
       return { success: true, accessToken: serverConfig.authorization.token }
     }
 

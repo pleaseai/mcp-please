@@ -17,9 +17,25 @@ interface JsonSchemaProperty {
   default?: unknown
 }
 
-interface JsonSchema {
+interface CliUsageJsonSchema {
   properties?: Record<string, JsonSchemaProperty>
   required?: string[]
+}
+
+/**
+ * Build example args object from tool schema
+ */
+function buildExampleArgs(tool: ToolDefinition): Record<string, string> {
+  const schema = tool.inputSchema as CliUsageJsonSchema
+  const properties = schema.properties || {}
+  const requiredFields = schema.required || []
+  const exampleArgs: Record<string, string> = {}
+
+  for (const field of requiredFields) {
+    const prop = properties[field]
+    exampleArgs[field] = getPlaceholder(prop)
+  }
+  return exampleArgs
 }
 
 /**
@@ -33,17 +49,7 @@ interface JsonSchema {
  * // Returns: 'mcp-search call "server__tool" --args \'{"path": "<string>", "content": "<string>"}\''
  */
 export function generateCliUsage(tool: ToolDefinition): string {
-  const schema = tool.inputSchema as JsonSchema
-  const properties = schema.properties || {}
-  const requiredFields = schema.required || []
-
-  // Build example args object with placeholders for required fields
-  const exampleArgs: Record<string, string> = {}
-
-  for (const field of requiredFields) {
-    const prop = properties[field]
-    exampleArgs[field] = getPlaceholder(prop)
-  }
+  const exampleArgs = buildExampleArgs(tool)
 
   // Format the args JSON
   const argsJson = Object.keys(exampleArgs).length > 0
@@ -94,17 +100,7 @@ export function generateDetailedCliUsage(tool: ToolDefinition): {
   stdinExample: string
 } {
   const argsExample = generateCliUsage(tool)
-
-  const schema = tool.inputSchema as JsonSchema
-  const properties = schema.properties || {}
-  const requiredFields = schema.required || []
-
-  // Build example args for stdin
-  const exampleArgs: Record<string, string> = {}
-  for (const field of requiredFields) {
-    const prop = properties[field]
-    exampleArgs[field] = getPlaceholder(prop)
-  }
+  const exampleArgs = buildExampleArgs(tool)
 
   const argsJson = Object.keys(exampleArgs).length > 0
     ? JSON.stringify(exampleArgs, null, 2)
