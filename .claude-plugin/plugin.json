@@ -1,0 +1,21 @@
+{
+  "name": "mcp-gateway",
+  "version": "0.2.5-beta.1",
+  "description": "PleaseAI GitHub CLI extension을 위한 Claude Code 전문성 제공",
+  "author": {
+    "name": "Minsu Lee",
+    "email": "minsu.lee@passionfactory.ai",
+    "url": "https://passionfactory.ai"
+  },
+  "homepage": "https://github.com/pleaseai/mcp-gateway",
+  "repository": "https://github.com/pleaseai/mcp-gateway",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "tool-search",
+    "claude-code",
+    "pleaseai",
+    "gateway"
+  ]
+}

@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "mcp-gateway": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "packages/mcp/dist/cli.js",
+        "@pleaseai/mcp-gateway@beta",
         "serve",
         "--mode",
         "embedding"
