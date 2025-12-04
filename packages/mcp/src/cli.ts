@@ -2,6 +2,7 @@
 
 import process from 'node:process'
 import { Command } from 'commander'
+import { createCallCommand } from './commands/call.js'
 import { createIndexCommand } from './commands/index-cmd.js'
 import { createInstallCommand } from './commands/install.js'
 import { createMcpCommand } from './commands/mcp.js'
@@ -18,6 +19,7 @@ program
 // Add commands
 program.addCommand(createIndexCommand())
 program.addCommand(createSearchCommand())
+program.addCommand(createCallCommand())
 program.addCommand(createServeCommand())
 program.addCommand(createInstallCommand())
 program.addCommand(createMcpCommand())

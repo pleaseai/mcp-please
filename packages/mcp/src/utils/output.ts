@@ -1,4 +1,5 @@
 import type { SearchResult, ToolReference } from '@pleaseai/mcp-core'
+import type { ExecuteToolError, ExecuteToolSuccess } from '../services/tool-executor.js'
 import chalk from 'chalk'
 import Table from 'cli-table3'
 
@@ -121,4 +122,46 @@ export function warn(message: string): void {
  */
 export function info(message: string): void {
   console.log(`${chalk.blue('ℹ')} ${message}`)
+}
+
+/**
+ * Call output format options (subset of OutputFormat)
+ */
+export type CallOutputFormat = 'json' | 'minimal'
+
+/**
+ * Format tool call result based on output format
+ */
+export function formatCallResult(result: ExecuteToolSuccess, format: CallOutputFormat): string {
+  switch (format) {
+    case 'minimal':
+      // Output only text content, one per line
+      return result.result.content
+        .filter(c => c.text)
+        .map(c => c.text)
+        .join('\n')
+
+    case 'json':
+    default:
+      return JSON.stringify(result.result, null, 2)
+  }
+}
+
+/**
+ * Format tool call error based on output format
+ */
+export function formatCallError(err: ExecuteToolError, format: CallOutputFormat): string {
+  switch (format) {
+    case 'minimal':
+      // Simple error message for minimal format
+      return err.hint ? `${err.message}\n${err.hint}` : err.message
+
+    case 'json':
+    default:
+      return JSON.stringify({
+        error: err.error,
+        message: err.message,
+        ...(err.hint && { hint: err.hint }),
+      }, null, 2)
+  }
 }

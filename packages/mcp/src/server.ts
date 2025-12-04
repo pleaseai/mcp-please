@@ -1,4 +1,5 @@
 import type { EmbeddingProvider, PersistedIndex, SearchMode, ServerConfig } from '@pleaseai/mcp-core'
+import type { ToolExecutor } from './services/tool-executor.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
@@ -7,9 +8,8 @@ import {
   SearchOrchestrator,
 } from '@pleaseai/mcp-core'
 import { z } from 'zod'
-import { callToolOnMcpServer } from './utils/mcp-client.js'
-import { getAllMcpServers } from './utils/mcp-config-loader.js'
-import { OAuthManager, TokenStorage } from './utils/oauth/index.js'
+import { createToolExecutor } from './services/tool-executor.js'
+import { generateCliUsage } from './utils/cli-usage.js'
 
 /**
  * MCP Tool Search Server
@@ -29,6 +29,7 @@ export class McpToolSearchServer {
   private searchOrchestrator: SearchOrchestrator
   private embeddingProvider?: EmbeddingProvider
   private cachedIndex?: PersistedIndex
+  private toolExecutor: ToolExecutor
 
   constructor(config: ServerConfig) {
     this.config = config
@@ -36,6 +37,16 @@ export class McpToolSearchServer {
     this.searchOrchestrator = new SearchOrchestrator({
       defaultMode: config.defaultMode,
       defaultTopK: 10,
+    })
+
+    // Create tool executor with lazy index loading
+    this.toolExecutor = createToolExecutor({
+      getIndex: async () => {
+        if (!this.cachedIndex) {
+          this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+        }
+        return this.cachedIndex
+      },
     })
 
     this.server = new McpServer({
@@ -306,6 +317,9 @@ Response Format:
             description: (schema as { description?: string }).description || '',
           }))
 
+          // Generate CLI usage template for permission-checkable tool calls
+          const cliUsage = generateCliUsage(tool)
+
           return {
             content: [
               {
@@ -320,6 +334,7 @@ Response Format:
                     inputSchema: tool.inputSchema,
                     outputSchema: tool.outputSchema,
                     metadata: tool.metadata,
+                    cliUsage,
                   },
                   null,
                   2,
@@ -368,145 +383,49 @@ Common Errors:
         },
       },
       async ({ name, arguments: args }) => {
-        try {
-          if (!this.cachedIndex) {
-            this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
-          }
+        // Use ToolExecutor for unified tool execution logic
+        const result = await this.toolExecutor.execute(name, args as Record<string, unknown>)
 
-          const indexedTool = this.cachedIndex.tools.find(t => t.tool.name === name)
-
-          if (!indexedTool) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: JSON.stringify({ error: `Tool '${name}' not found` }),
-                },
-              ],
-              isError: true,
-            }
-          }
-
-          // Get server name and original tool name from metadata
-          const serverName = indexedTool.tool.metadata?.server as string | undefined
-          const originalName = indexedTool.tool.metadata?.originalName as string | undefined
-
-          if (!serverName || !originalName) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: JSON.stringify({
-                    error: 'Tool metadata missing',
-                    hint: 'Tool does not have server information. Re-index from MCP servers.',
-                  }),
-                },
-              ],
-              isError: true,
-            }
-          }
-
-          // Get server config
-          const allServers = getAllMcpServers()
-          const serverConfig = allServers.get(serverName)
-
-          if (!serverConfig) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: JSON.stringify({
-                    error: `Server '${serverName}' not found in configuration`,
-                    hint: 'The MCP server for this tool is not configured.',
-                  }),
-                },
-              ],
-              isError: true,
-            }
-          }
-
-          // Get access token for OAuth servers
-          let accessToken: string | undefined
-
-          if (serverConfig.authorization?.type === 'oauth2' && serverConfig.url) {
-            const tokenStorage = new TokenStorage()
-            const hasSession = await tokenStorage.hasSession(serverConfig.url)
-
-            if (hasSession) {
-              const oauthManager = new OAuthManager({
-                serverName,
-                serverUrl: serverConfig.url,
-                scopes: serverConfig.authorization.oauth?.scopes,
-              })
-              accessToken = await oauthManager.getAccessToken()
-            }
-            else {
-              return {
-                content: [
-                  {
-                    type: 'text' as const,
-                    text: JSON.stringify({
-                      error: `No valid OAuth session for '${serverName}'`,
-                      hint: `Run: mcp-search mcp auth ${serverName}`,
-                    }),
-                  },
-                ],
-                isError: true,
-              }
-            }
-          }
-          else if (serverConfig.authorization?.type === 'bearer') {
-            accessToken = serverConfig.authorization.token
-          }
-
-          // Call the tool on the MCP server
-          const result = await callToolOnMcpServer({
-            name: serverName,
-            config: serverConfig,
-            accessToken,
-            toolName: originalName,
-            toolArguments: args as Record<string, unknown>,
-          })
-
-          return {
-            content: result.content.map((c) => {
-              // Transform content blocks based on type
-              // Binary data (type='data') without text is converted to text representation
-              // Other types are preserved with proper type narrowing
-              if (c.type === 'data' && c.data && !c.text) {
-                return {
-                  type: 'text' as const,
-                  text: `[Binary data: ${c.mimeType}]`,
-                }
-              }
-              // For image/audio/resource types with binary data, preserve them
-              if (c.type === 'image' && c.data && c.mimeType) {
-                return {
-                  type: 'image' as const,
-                  data: c.data,
-                  mimeType: c.mimeType,
-                }
-              }
-              // Default: treat as text content
-              return {
-                type: 'text' as const,
-                text: c.text ?? '',
-              }
-            }),
-            isError: result.isError,
-          }
-        }
-        catch (err) {
-          const message = err instanceof Error ? err.message : String(err)
+        if (!result.success) {
           return {
             content: [
               {
                 type: 'text' as const,
-                text: JSON.stringify({ error: message }),
+                text: JSON.stringify({
+                  error: result.message,
+                  ...(result.hint && { hint: result.hint }),
+                }),
               },
             ],
             isError: true,
           }
+        }
+
+        // Transform content blocks for MCP response
+        return {
+          content: result.result.content.map((c) => {
+            // Binary data (type='data') without text is converted to text representation
+            if (c.type === 'data' && c.data && !c.text) {
+              return {
+                type: 'text' as const,
+                text: `[Binary data: ${c.mimeType}]`,
+              }
+            }
+            // For image/audio/resource types with binary data, preserve them
+            if (c.type === 'image' && c.data && c.mimeType) {
+              return {
+                type: 'image' as const,
+                data: c.data,
+                mimeType: c.mimeType,
+              }
+            }
+            // Default: treat as text content
+            return {
+              type: 'text' as const,
+              text: c.text ?? '',
+            }
+          }),
+          isError: result.result.isError,
         }
       },
     )
