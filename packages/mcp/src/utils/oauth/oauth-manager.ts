@@ -22,6 +22,7 @@ import { TokenStorage } from './token-storage.js'
 const DEFAULT_CALLBACK_PORT = 3334
 const DEFAULT_CALLBACK_HOST = 'localhost'
 const AUTH_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
+const MAX_PORT_ATTEMPTS = 10
 
 /**
  * Simple console logger that respects debug flag
@@ -60,6 +61,7 @@ export class OAuthManager {
   private storage: TokenStorage
   private metadata?: OAuthMetadata
   private session?: OAuthSession
+  private actualCallbackPort?: number
 
   constructor(config: OAuthConfig, options?: { debug?: boolean, logger?: OAuthLogger }) {
     this.config = {
@@ -82,6 +84,51 @@ export class OAuthManager {
   private getAuthBaseUrl(): string {
     const url = new URL(this.config.serverUrl)
     return `${url.protocol}//${url.host}`
+  }
+
+  /**
+   * Get the callback port to use (actual port if found, otherwise configured port)
+   */
+  private getCallbackPort(): number {
+    return this.actualCallbackPort ?? this.config.callbackPort
+  }
+
+  /**
+   * Check if a port is available for binding
+   */
+  private isPortAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = createServer()
+      server.once('error', (err: NodeJS.ErrnoException) => {
+        if (err.code !== 'EADDRINUSE') {
+          this.logger.debug(`Port ${port} check failed: ${err.code} - ${err.message}`)
+        }
+        resolve(false)
+      })
+      server.once('listening', () => {
+        server.close(() => resolve(true))
+      })
+      server.listen(port, this.config.callbackHost)
+    })
+  }
+
+  /**
+   * Find an available port starting from the configured callback port
+   * Tries up to MAX_PORT_ATTEMPTS consecutive ports
+   */
+  private async findAvailablePort(): Promise<number> {
+    const basePort = this.config.callbackPort
+    for (let attempt = 0; attempt < MAX_PORT_ATTEMPTS; attempt++) {
+      const port = basePort + attempt
+      if (await this.isPortAvailable(port)) {
+        if (attempt > 0) {
+          this.logger.warn(`Port ${basePort} in use, using port ${port}`)
+        }
+        return port
+      }
+    }
+    const lastPort = basePort + MAX_PORT_ATTEMPTS - 1
+    throw new Error(`All ports ${basePort}-${lastPort} are in use. Please close other applications using these ports.`)
   }
 
   /**
@@ -164,7 +211,7 @@ export class OAuthManager {
 
     this.logger.info('Registering dynamic OAuth client')
 
-    const redirectUri = `http://${this.config.callbackHost}:${this.config.callbackPort}/callback`
+    const redirectUri = `http://${this.config.callbackHost}:${this.getCallbackPort()}/callback`
 
     // Build registration request (don't specify PKCE here - it's per-authorization-request)
     const registrationRequest: OAuthClientRegistrationRequest = {
@@ -211,7 +258,7 @@ export class OAuthManager {
     clientInfo: OAuthClientInfo,
   ): Promise<OAuthTokenResponse> {
     const state = generateState()
-    const redirectUri = `http://${this.config.callbackHost}:${this.config.callbackPort}/callback`
+    const redirectUri = `http://${this.config.callbackHost}:${this.getCallbackPort()}/callback`
 
     // Check if server supports PKCE
     const usePKCE = this.serverSupportsPKCE(metadata)
@@ -303,8 +350,10 @@ export class OAuthManager {
         reject(new Error('Authorization timeout'))
       }, AUTH_TIMEOUT_MS)
 
+      const callbackPort = this.getCallbackPort()
+
       server = createServer((req, res) => {
-        const url = new URL(req.url ?? '', `http://${this.config.callbackHost}:${this.config.callbackPort}`)
+        const url = new URL(req.url ?? '', `http://${this.config.callbackHost}:${callbackPort}`)
 
         if (url.pathname !== '/callback') {
           res.writeHead(404)
@@ -351,8 +400,8 @@ export class OAuthManager {
         reject(new Error('Invalid callback: missing code'))
       })
 
-      server.listen(this.config.callbackPort, () => {
-        this.logger.info(`Callback server listening on port ${this.config.callbackPort}`)
+      server.listen(callbackPort, () => {
+        this.logger.info(`Callback server listening on port ${callbackPort}`)
 
         // Open browser with the provided authorization URL (includes PKCE parameters)
         open(authorizationUrl).catch((err) => {
@@ -361,9 +410,15 @@ export class OAuthManager {
         })
       })
 
-      server.on('error', (err) => {
+      server.on('error', (err: NodeJS.ErrnoException) => {
         clearTimeout(timeout)
-        reject(err)
+        if (err.code === 'EADDRINUSE') {
+          this.logger.warn(`Port ${callbackPort} became unavailable (race condition)`)
+          reject(new Error(`Port ${callbackPort} became unavailable. Please try again.`))
+        }
+        else {
+          reject(err)
+        }
       })
     })
   }
@@ -433,6 +488,10 @@ export class OAuthManager {
         return this.session.tokens.access_token
       }
     }
+
+    // Find an available port for the callback server before any registration
+    this.actualCallbackPort = await this.findAvailablePort()
+    this.logger.info(`Using callback port ${this.actualCallbackPort}`)
 
     // Discover protected resource metadata first (RFC 9728)
     const resourceMetadata = await this.discoverProtectedResource()
