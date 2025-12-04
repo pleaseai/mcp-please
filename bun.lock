@@ -17,7 +17,7 @@
     },
     "packages/core": {
       "name": "@pleaseai/mcp-core",
-      "version": "0.1.2-beta.1",
+      "version": "0.1.3-beta.1",
       "dependencies": {
         "@huggingface/transformers": "catalog:",
         "openai": "catalog:",
@@ -33,10 +33,10 @@
       },
     },
     "packages/mcp": {
-      "name": "@pleaseai/mcp",
-      "version": "0.2.1-beta.1",
+      "name": "@pleaseai/mcp-gateway",
+      "version": "0.2.2-beta.1",
       "bin": {
-        "pleaseai-mcp": "dist/cli.js",
+        "mcp-gateway": "dist/cli.js",
       },
       "dependencies": {
         "@inquirer/prompts": "^7.2.1",
@@ -324,9 +324,9 @@
 
     "@pkgr/core": ["@pkgr/core@0.2.9", "", {}, "sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA=="],
 
-    "@pleaseai/mcp": ["@pleaseai/mcp@workspace:packages/mcp"],
-
     "@pleaseai/mcp-core": ["@pleaseai/mcp-core@workspace:packages/core"],
+
+    "@pleaseai/mcp-gateway": ["@pleaseai/mcp-gateway@workspace:packages/mcp"],
 
     "@protobufjs/aspromise": ["@protobufjs/aspromise@1.1.2", "", {}, "sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ=="],
 
