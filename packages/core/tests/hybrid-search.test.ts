@@ -196,6 +196,96 @@ describe('HybridSearchStrategy', () => {
   })
 })
 
+describe('Edge Cases', () => {
+  test('should handle empty tool index', async () => {
+    const bm25 = new BM25SearchStrategy()
+    const embedding = new EmbeddingSearchStrategy(mockEmbeddingProvider)
+    const hybrid = new HybridSearchStrategy(bm25, embedding)
+
+    const tools: IndexedTool[] = []
+    const options: SearchOptions = { topK: 5 }
+
+    // Empty index with no embeddings should throw
+    await expect(
+      hybrid.search('test', tools, options),
+    ).rejects.toThrow('Hybrid search requires embeddings')
+  })
+
+  test('should handle tools with mixed embedding presence', async () => {
+    const bm25 = new BM25SearchStrategy()
+    const embedding = new EmbeddingSearchStrategy(mockEmbeddingProvider)
+    const hybrid = new HybridSearchStrategy(bm25, embedding)
+
+    await embedding.initialize()
+
+    // Mix of tools with and without embeddings
+    const tools: IndexedTool[] = [
+      {
+        tool: { name: 'with_embedding', description: 'Tool with embedding', inputSchema: { type: 'object' } },
+        searchableText: 'tool with embedding',
+        tokens: ['tool', 'embedding'],
+        embedding: [0.1, 0.2, 0.3],
+      },
+      {
+        tool: { name: 'without_embedding', description: 'Tool without embedding', inputSchema: { type: 'object' } },
+        searchableText: 'tool without embedding',
+        tokens: ['tool', 'without', 'embedding'],
+        // No embedding field
+      },
+    ]
+
+    const options: SearchOptions = { topK: 5 }
+
+    // Should not throw - at least one tool has embeddings
+    const results = await hybrid.search('tool', tools, options)
+    expect(results.length).toBeGreaterThan(0)
+  })
+
+  test('should provide clear error context when BM25 fails', async () => {
+    // Create a failing BM25 strategy
+    const failingBm25 = {
+      mode: 'bm25' as const,
+      initialize: async () => {},
+      search: async () => { throw new Error('BM25 internal error') },
+      dispose: async () => {},
+    } as BM25SearchStrategy
+
+    const embedding = new EmbeddingSearchStrategy(mockEmbeddingProvider)
+    const hybrid = new HybridSearchStrategy(failingBm25, embedding)
+
+    await embedding.initialize()
+
+    const tools = createTestTools(3)
+    const options: SearchOptions = { topK: 3 }
+
+    await expect(
+      hybrid.search('test', tools, options),
+    ).rejects.toThrow('BM25 search failed: BM25 internal error')
+  })
+
+  test('should provide clear error context when Embedding fails', async () => {
+    const bm25 = new BM25SearchStrategy()
+
+    // Create a failing embedding strategy
+    const failingEmbedding = {
+      mode: 'embedding' as const,
+      initialize: async () => {},
+      search: async () => { throw new Error('Embedding API timeout') },
+      dispose: async () => {},
+      setEmbeddingProvider: () => {},
+    } as EmbeddingSearchStrategy
+
+    const hybrid = new HybridSearchStrategy(bm25, failingEmbedding)
+
+    const tools = createTestTools(3)
+    const options: SearchOptions = { topK: 3 }
+
+    await expect(
+      hybrid.search('test', tools, options),
+    ).rejects.toThrow('Embedding search failed: Embedding API timeout')
+  })
+})
+
 describe('RRF Score Calculation', () => {
   test('should combine results from both strategies', async () => {
     const bm25 = new BM25SearchStrategy()

@@ -49,8 +49,12 @@ export class HybridSearchStrategy implements SearchStrategy {
 
     // Run both searches in parallel
     const [bm25Results, embeddingResults] = await Promise.all([
-      this.bm25Strategy.search(query, indexedTools, expandedOptions),
-      this.embeddingStrategy.search(query, indexedTools, expandedOptions),
+      this.bm25Strategy.search(query, indexedTools, expandedOptions).catch((err) => {
+        throw new Error(`BM25 search failed: ${err instanceof Error ? err.message : String(err)}`)
+      }),
+      this.embeddingStrategy.search(query, indexedTools, expandedOptions).catch((err) => {
+        throw new Error(`Embedding search failed: ${err instanceof Error ? err.message : String(err)}`)
+      }),
     ])
 
     // Apply Reciprocal Rank Fusion
@@ -69,7 +73,8 @@ export class HybridSearchStrategy implements SearchStrategy {
 
   /**
    * Reciprocal Rank Fusion algorithm
-   * RRF(d) = sum(1 / (k + rank(d)))
+   * RRF(d) = sum(1 / (k + rank_i(d))) where rank is 1-based
+   * Since JavaScript arrays are 0-indexed, we use (rank + 1) in the formula
    */
   private reciprocalRankFusion(
     bm25Results: ToolReference[],
