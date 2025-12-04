@@ -13,16 +13,17 @@ export class HybridSearchStrategy implements SearchStrategy {
   private readonly bm25Strategy: BM25SearchStrategy
   private readonly embeddingStrategy: EmbeddingSearchStrategy
   private readonly rrfK: number
-  private readonly topKMultiplier = 3
+  private readonly topKMultiplier: number
 
   constructor(
     bm25Strategy: BM25SearchStrategy,
     embeddingStrategy: EmbeddingSearchStrategy,
-    options?: { rrfK?: number },
+    options?: { rrfK?: number, topKMultiplier?: number },
   ) {
     this.bm25Strategy = bm25Strategy
     this.embeddingStrategy = embeddingStrategy
     this.rrfK = options?.rrfK ?? 60
+    this.topKMultiplier = options?.topKMultiplier ?? 3
   }
 
   async initialize(): Promise<void> {
@@ -82,23 +83,21 @@ export class HybridSearchStrategy implements SearchStrategy {
   ): ToolReference[] {
     const scores = new Map<string, { score: number, tool: ToolReference }>()
 
-    // Process BM25 results
-    bm25Results.forEach((result, rank) => {
-      const rrfScore = 1 / (this.rrfK + rank + 1)
-      scores.set(result.name, { score: rrfScore, tool: result })
-    })
+    const addScores = (results: ToolReference[]): void => {
+      results.forEach((result, rank) => {
+        const rrfScore = 1 / (this.rrfK + rank + 1)
+        const existing = scores.get(result.name)
+        if (existing) {
+          existing.score += rrfScore
+        }
+        else {
+          scores.set(result.name, { score: rrfScore, tool: result })
+        }
+      })
+    }
 
-    // Process embedding results and combine
-    embeddingResults.forEach((result, rank) => {
-      const rrfScore = 1 / (this.rrfK + rank + 1)
-      const existing = scores.get(result.name)
-      if (existing) {
-        existing.score += rrfScore
-      }
-      else {
-        scores.set(result.name, { score: rrfScore, tool: result })
-      }
-    })
+    addScores(bm25Results)
+    addScores(embeddingResults)
 
     // Convert to array and sort by fused score
     const results = Array.from(scores.values())
