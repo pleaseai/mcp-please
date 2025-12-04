@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4-beta.1](https://github.com/pleaseai/mcp-gateway/compare/mcp-v0.2.3-beta.1...mcp-v0.2.4-beta.1) (2025-12-04)
+
+
+### Features
+
+* **oauth:** add port retry logic for OAuth callback server ([#27](https://github.com/pleaseai/mcp-gateway/issues/27)) ([d825140](https://github.com/pleaseai/mcp-gateway/commit/d8251404f0033f8d8e8227f25e0fda3f612163cf))
+
 ## [0.2.3-beta.1](https://github.com/pleaseai/mcp-gateway/compare/mcp-v0.2.2-beta.1...mcp-v0.2.3-beta.1) (2025-12-04)
 
 
