@@ -4,7 +4,7 @@ This document compares lightweight embedding models suitable for local deploymen
 
 ## Current Implementation
 
-MCP Search uses **MongoDB/mdbr-leaf-ir** as the default local embedding provider.
+MCP Gateway uses **MongoDB/mdbr-leaf-ir** as the default local embedding provider.
 
 ## Benchmark Results (BEIR nDCG@10)
 
@@ -113,16 +113,16 @@ For local deployment with transformers.js:
 
 ```bash
 # Index with default fp32 precision
-mcp-search index tools.json
+mcp-gateway index tools.json
 
 # Index with quantized model (reduced memory)
-mcp-search index tools.json --dtype q8
+mcp-gateway index tools.json --dtype q8
 
 # Index with half precision (GPU acceleration)
-mcp-search index tools.json --dtype fp16
+mcp-gateway index tools.json --dtype fp16
 
 # Serve with quantized model
-mcp-search serve --dtype q8
+mcp-gateway serve --dtype q8
 ```
 
 ### Programmatic Usage

@@ -134,7 +134,7 @@ export async function loadToolsFromMcpServers(options: LoadToolsOptions = {}): P
           accessToken = await oauthManager.getAccessToken()
         }
         else {
-          throw new Error(`No valid OAuth session for "${name}". Run: mcp-search mcp auth ${name}`)
+          throw new Error(`No valid OAuth session for "${name}". Run: mcp-gateway mcp auth ${name}`)
         }
       }
       else if (config.authorization?.type === 'bearer') {

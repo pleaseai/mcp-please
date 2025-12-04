@@ -61,8 +61,8 @@ export function createServeCommand(): Command {
 
           if (allServers.size === 0) {
             spinner.fail('No index found and no MCP servers configured.')
-            error('Create an index first with: mcp-search index <sources>')
-            error('Or add MCP servers with: mcp-search mcp add')
+            error('Create an index first with: mcp-gateway index <sources>')
+            error('Or add MCP servers with: mcp-gateway mcp add')
             process.exit(1)
           }
 

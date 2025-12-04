@@ -1,8 +1,8 @@
-# MCP Please ( MCP Tool Search )
+# MCP Gateway
 
 [![npm version](https://img.shields.io/npm/v/@pleaseai/mcp.svg)](https://www.npmjs.com/package/@pleaseai/mcp)
 [![npm version](https://img.shields.io/npm/v/@pleaseai/mcp-core.svg)](https://www.npmjs.com/package/@pleaseai/mcp-core)
-[![codecov](https://codecov.io/gh/pleaseai/mcp-please/graph/badge.svg)](https://codecov.io/gh/pleaseai/mcp-please)
+[![codecov](https://codecov.io/gh/pleaseai/mcp-gateway/graph/badge.svg)](https://codecov.io/gh/pleaseai/mcp-gateway)
 [![code style](https://antfu.me/badge-code-style.svg)](https://github.com/antfu/eslint-config)
 
 MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **semantic (embedding)** search.
@@ -10,7 +10,7 @@ MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **seman
 ## Monorepo Structure
 
 ```
-mcp-please/
+mcp-gateway/
 ├── packages/
 │   ├── core/                # Core search engine (@pleaseai/mcp-core)
 │   └── mcp/                 # CLI + MCP server (@pleaseai/mcp)
@@ -309,7 +309,7 @@ List all tools in the index with pagination.
 
 ## OAuth Authentication
 
-MCP Please supports OAuth 2.1 authentication for remote MCP servers that require it.
+MCP Gateway supports OAuth 2.1 authentication for remote MCP servers that require it.
 
 ### How it works
 

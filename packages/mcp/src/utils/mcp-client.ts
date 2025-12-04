@@ -32,7 +32,7 @@ export async function fetchToolsFromMcpServer(options: McpClientOptions): Promis
   const { name, config, accessToken } = options
 
   const client = new Client(
-    { name: `mcp-search-client-${name}`, version: '1.0.0' },
+    { name: `mcp-gateway-client-${name}`, version: '1.0.0' },
     { capabilities: {} },
   )
 
@@ -133,7 +133,7 @@ export async function callToolOnMcpServer(options: CallToolOptions): Promise<Cal
   const { name, config, accessToken, toolName, toolArguments } = options
 
   const client = new Client(
-    { name: `mcp-search-client-${name}`, version: '1.0.0' },
+    { name: `mcp-gateway-client-${name}`, version: '1.0.0' },
     { capabilities: {} },
   )
 

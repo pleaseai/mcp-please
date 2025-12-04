@@ -168,7 +168,7 @@ export class OAuthManager {
 
     // Build registration request (don't specify PKCE here - it's per-authorization-request)
     const registrationRequest: OAuthClientRegistrationRequest = {
-      client_name: `mcp-search (${this.config.serverName})`,
+      client_name: `mcp-gateway (${this.config.serverName})`,
       redirect_uris: [redirectUri],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],

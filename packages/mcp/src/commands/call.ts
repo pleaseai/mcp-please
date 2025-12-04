@@ -45,15 +45,15 @@ function parseArgs(argsString: string): Record<string, unknown> {
  *
  * @example
  * // Using --args flag
- * mcp-search call "github__get_issue" --args '{"owner":"org","repo":"repo","issue_number":123}'
+ * mcp-gateway call "github__get_issue" --args '{"owner":"org","repo":"repo","issue_number":123}'
  *
  * @example
  * // Using stdin pipe
- * echo '{"owner":"org","repo":"repo","issue_number":123}' | mcp-search call "github__get_issue"
+ * echo '{"owner":"org","repo":"repo","issue_number":123}' | mcp-gateway call "github__get_issue"
  *
  * @example
  * // With different output format
- * mcp-search call "tool_name" --args '{}' --format minimal
+ * mcp-gateway call "tool_name" --args '{}' --format minimal
  */
 export function createCallCommand(): Command {
   const cmd = new Command('call')

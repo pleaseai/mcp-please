@@ -1,5 +1,5 @@
 {
-  "name": "@pleaseai/mcp",
+  "name": "@pleaseai/mcp-gateway",
   "type": "module",
   "version": "0.2.2-beta.1",
   "description": "MCP server and CLI for tool search",

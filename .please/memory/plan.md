@@ -2,13 +2,13 @@
 
 ## Overview
 
-mcp-search에 OAuth 2.1 인증 지원 추가. 기존 아키텍처(동적 로딩 + search_tools)를 유지하면서 원격 HTTP/SSE MCP 서버의 OAuth 인증을 처리.
+mcp-gateway에 OAuth 2.1 인증 지원 추가. 기존 아키텍처(동적 로딩 + search_tools)를 유지하면서 원격 HTTP/SSE MCP 서버의 OAuth 인증을 처리.
 
 ## Design Decision
 
-### Why 방식 1 (mcp-search + OAuth)?
+### Why 방식 1 (mcp-gateway + OAuth)?
 
-| 기준 | 방식 1 (mcp-search) | 방식 2 (wrapper) |
+| 기준 | 방식 1 (mcp-gateway) | 방식 2 (wrapper) |
 |------|---------------------|-----------------|
 | Token 효율 | 높음 (5개 tool만 노출) | 낮음 (전체 tool 노출) |
 | 검색 | 전체 통합 검색 | 불가 또는 분리됨 |
@@ -50,16 +50,16 @@ call_tool 시점:
 
 ```bash
 # OAuth 서버 추가 (인증 flow 자동 시작)
-mcp-search mcp add asana https://mcp.asana.com/sse -t sse --auth oauth2 --scopes default
+mcp-gateway mcp add asana https://mcp.asana.com/sse -t sse --auth oauth2 --scopes default
 
 # 인증 상태 확인
-mcp-search mcp auth --list
+mcp-gateway mcp auth --list
 
 # 재인증
-mcp-search mcp auth asana
+mcp-gateway mcp auth asana
 
 # 인증 취소
-mcp-search mcp auth asana --revoke
+mcp-gateway mcp auth asana --revoke
 ```
 
 ---

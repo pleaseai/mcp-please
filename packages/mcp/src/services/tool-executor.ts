@@ -117,7 +117,7 @@ export class ToolExecutor {
         success: false,
         error: 'SERVER_NOT_CONFIGURED',
         message: `Server '${serverName}' not found in configuration`,
-        hint: `Add server to .please/mcp.json or run: mcp-search mcp add ${serverName}`,
+        hint: `Add server to .please/mcp.json or run: mcp-gateway mcp add ${serverName}`,
       }
     }
 
@@ -180,7 +180,7 @@ export class ToolExecutor {
         success: false,
         error: 'AUTH_REQUIRED',
         message: `No valid OAuth session for '${serverName}'`,
-        hint: `Run: mcp-search mcp auth ${serverName}`,
+        hint: `Run: mcp-gateway mcp auth ${serverName}`,
       }
     }
 

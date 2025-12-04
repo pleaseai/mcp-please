@@ -46,7 +46,7 @@ function buildExampleArgs(tool: ToolDefinition): Record<string, string> {
  *
  * @example
  * // For a tool with required fields: path (string), content (string)
- * // Returns: 'mcp-search call "server__tool" --args \'{"path": "<string>", "content": "<string>"}\''
+ * // Returns: 'mcp-gateway call "server__tool" --args \'{"path": "<string>", "content": "<string>"}\''
  */
 export function generateCliUsage(tool: ToolDefinition): string {
   const exampleArgs = buildExampleArgs(tool)
@@ -56,7 +56,7 @@ export function generateCliUsage(tool: ToolDefinition): string {
     ? JSON.stringify(exampleArgs)
     : '{}'
 
-  return `mcp-search call "${tool.name}" --args '${argsJson}'`
+  return `mcp-gateway call "${tool.name}" --args '${argsJson}'`
 }
 
 /**
@@ -106,7 +106,7 @@ export function generateDetailedCliUsage(tool: ToolDefinition): {
     ? JSON.stringify(exampleArgs, null, 2)
     : '{}'
 
-  const stdinExample = `echo '${argsJson}' | mcp-search call "${tool.name}"`
+  const stdinExample = `echo '${argsJson}' | mcp-gateway call "${tool.name}"`
 
   return { argsExample, stdinExample }
 }

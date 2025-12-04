@@ -90,7 +90,7 @@ export function createIndexCommand(): Command {
           const allServers = getAllMcpServers()
 
           if (allServers.size === 0) {
-            spinner.fail('No MCP servers configured. Add servers with: mcp-search mcp add')
+            spinner.fail('No MCP servers configured. Add servers with: mcp-gateway mcp add')
             process.exit(1)
           }
 
