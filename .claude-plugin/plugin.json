@@ -1,7 +1,7 @@
 {
   "name": "mcp-gateway",
   "version": "0.2.5-beta.1",
-  "description": "PleaseAI GitHub CLI extension을 위한 Claude Code 전문성 제공",
+  "description": "MCP gateway server for tool discovery with regex, BM25, embedding, and hybrid search",
   "author": {
     "name": "Minsu Lee",
     "email": "minsu.lee@passionfactory.ai",
