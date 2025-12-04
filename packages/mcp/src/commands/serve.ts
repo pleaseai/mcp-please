@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype, SearchMode } from '@pleaseai/mcp-core'
 import fs from 'node:fs'
 import process from 'node:process'
 import { createEmbeddingProvider, IndexBuilder, IndexManager } from '@pleaseai/mcp-core'
@@ -24,6 +24,11 @@ export function createServeCommand(): Command {
       'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
       DEFAULT_EMBEDDING_PROVIDER,
     )
+    .option(
+      '--dtype <type>',
+      'Model dtype: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .action(async (options) => {
       const spinner = ora('Starting MCP server...').start()
 
@@ -32,6 +37,7 @@ export function createServeCommand(): Command {
         const port = Number.parseInt(options.port, 10)
         const defaultMode = options.mode as SearchMode
         const providerType = options.provider as EmbeddingProviderType
+        const dtype = options.dtype as ModelDtype
         const indexPath = options.index as string
 
         // Check if index exists, if not create it automatically
@@ -53,7 +59,7 @@ export function createServeCommand(): Command {
           // Setup embedding provider if using embedding mode
           let autoIndexEmbeddingProvider = null
           if (defaultMode === 'embedding') {
-            autoIndexEmbeddingProvider = createEmbeddingProvider({ type: providerType })
+            autoIndexEmbeddingProvider = createEmbeddingProvider({ type: providerType, dtype })
             await autoIndexEmbeddingProvider.initialize()
             indexManager.setEmbeddingProvider(autoIndexEmbeddingProvider)
           }
@@ -106,6 +112,7 @@ export function createServeCommand(): Command {
         // Create embedding provider
         const embeddingProvider = createEmbeddingProvider({
           type: providerType,
+          dtype,
         })
 
         // Create server

@@ -1,3 +1,4 @@
+import type { ModelDtype } from '../../types/index.js'
 import type { EmbeddingProvider } from '../provider.js'
 
 // Simplified type for transformers.js pipeline
@@ -17,9 +18,11 @@ export class MiniLMEmbeddingProvider implements EmbeddingProvider {
 
   private extractor: Pipeline | null = null
   private modelName: string
+  private dtype: ModelDtype
 
-  constructor(modelName?: string) {
+  constructor(modelName?: string, dtype?: ModelDtype) {
     this.modelName = modelName ?? 'Xenova/all-MiniLM-L6-v2'
+    this.dtype = dtype ?? 'fp32'
   }
 
   async initialize(): Promise<void> {
@@ -30,7 +33,7 @@ export class MiniLMEmbeddingProvider implements EmbeddingProvider {
     const { pipeline } = await import('@huggingface/transformers')
 
     this.extractor = await pipeline('feature-extraction', this.modelName, {
-      dtype: 'fp32',
+      dtype: this.dtype,
     })
   }
 

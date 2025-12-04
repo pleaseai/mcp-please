@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType, ToolDefinition } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype, ToolDefinition } from '@pleaseai/mcp-core'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
@@ -25,6 +25,11 @@ export function createIndexCommand(): Command {
       DEFAULT_EMBEDDING_PROVIDER,
     )
     .option('-m, --model <name>', 'Embedding model name')
+    .option(
+      '-d, --dtype <type>',
+      'Model dtype: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')
     .option('--exclude <servers>', 'Comma-separated list of MCP servers to exclude')
@@ -39,12 +44,14 @@ export function createIndexCommand(): Command {
         // Setup embedding provider if needed
         if (options.embeddings) {
           const providerType = options.provider as EmbeddingProviderType
+          const dtype = options.dtype as ModelDtype
 
           spinner.text = `Initializing ${providerType} embedding provider...`
 
           const provider = createEmbeddingProvider({
             type: providerType,
             model: options.model,
+            dtype,
           })
 
           await provider.initialize()
