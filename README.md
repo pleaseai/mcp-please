@@ -46,13 +46,40 @@ mcp-gateway/
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
 ```bash
-# Using npm/npx (recommended)
+brew install pleaseai/tap/mcp-gateway
+```
+
+### Shell Script
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pleaseai/mcp-gateway/main/install.sh | bash
+```
+
+> **Security Note**: Piping `curl` to `bash` executes remote code without inspection. For added security, you can download and inspect the script first:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/pleaseai/mcp-gateway/main/install.sh -o install.sh
+> # ... inspect install.sh ...
+> bash install.sh
+> ```
+
+### npm/npx
+
+```bash
+# Using npx (no install required)
 npx @pleaseai/mcp-gateway index <tool-sources>
 npx @pleaseai/mcp-gateway search "query"
 npx @pleaseai/mcp-gateway serve
 
-# Development setup
+# Global install
+npm install -g @pleaseai/mcp-gateway
+```
+
+### Development Setup
+
+```bash
 bun install
 bun run build
 ```

@@ -2,6 +2,7 @@
 
 import process from 'node:process'
 import { Command } from 'commander'
+import pkg from '../package.json' with { type: 'json' }
 import { createCallCommand, executeToolDirect } from './commands/call.js'
 import { createIndexCommand } from './commands/index-cmd.js'
 import { createInstallCommand } from './commands/install.js'
@@ -14,7 +15,7 @@ const program = new Command()
 program
   .name('mcp-gateway')
   .description('MCP server and CLI for searching tools using regex, BM25, or semantic search')
-  .version('1.0.0')
+  .version(pkg.version)
 
 // Known subcommands
 const KNOWN_COMMANDS = new Set(['index', 'search', 'call', 'serve', 'install', 'mcp', 'help', '-h', '--help', '-V', '--version'])
