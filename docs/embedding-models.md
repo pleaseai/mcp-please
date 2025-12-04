@@ -78,14 +78,26 @@ Key features:
 
 ## Memory Requirements
 
-| Model | FP32 |
-|-------|------|
-| mdbr-leaf-ir | ~90MB |
-| all-MiniLM-L6-v2 | ~90MB |
-| bge-small-en-v1.5 | ~130MB |
-| snowflake-arctic-embed-xs | ~90MB |
+| Model | FP32 | FP16 | Q8 | Q4 |
+|-------|------|------|-----|-----|
+| mdbr-leaf-ir | ~90MB | ~45MB | ~23MB | ~12MB |
+| all-MiniLM-L6-v2 | ~90MB | ~45MB | ~23MB | ~12MB |
+| bge-small-en-v1.5 | ~130MB | ~65MB | ~33MB | ~17MB |
+| snowflake-arctic-embed-xs | ~90MB | ~45MB | ~23MB | ~12MB |
 
-> **Note**: The current implementation uses FP32 precision. FP16 and INT8 quantization may be supported in future versions.
+### Model Dtype Options
+
+The `dtype` option controls memory usage and inference speed trade-offs:
+
+| Dtype | Description | Memory | Speed | Accuracy |
+|-------|-------------|--------|-------|----------|
+| `fp32` | Full precision (default) | Highest | Baseline | Best |
+| `fp16` | Half precision | ~50% | Faster on GPU | Excellent |
+| `q8` | 8-bit quantization | ~25% | Fast | Very Good |
+| `q4` | 4-bit quantization | ~12.5% | Fastest | Good |
+| `q4f16` | 4-bit with fp16 compute | ~12.5% | Fast | Good |
+
+> **Tip**: Use `q8` for a good balance between memory savings and accuracy. Use `fp16` for GPU acceleration.
 
 ## Recommendation
 
@@ -97,22 +109,49 @@ For local deployment with transformers.js:
 
 ## Configuration Example
 
-```typescript
-import { MDBRLeafEmbeddingProvider } from '@pleaseai/mcp-core'
+### CLI Usage
 
-// Default: 256 dimensions (recommended)
+```bash
+# Index with default fp32 precision
+mcp-search index tools.json
+
+# Index with quantized model (reduced memory)
+mcp-search index tools.json --dtype q8
+
+# Index with half precision (GPU acceleration)
+mcp-search index tools.json --dtype fp16
+
+# Serve with quantized model
+mcp-search serve --dtype q8
+```
+
+### Programmatic Usage
+
+```typescript
+import { MDBRLeafEmbeddingProvider, createEmbeddingProvider } from '@pleaseai/mcp-core'
+
+// Default: 256 dimensions, fp32 precision (recommended)
 const provider = new MDBRLeafEmbeddingProvider()
 
-// Custom model with specific dimensions
+// Custom model with specific dimensions and dtype
 const customProvider = new MDBRLeafEmbeddingProvider(
   'MongoDB/mdbr-leaf-ir',
-  256  // dimensions (MRL truncation)
+  256,  // dimensions (MRL truncation)
+  'q8'  // dtype for 8-bit quantization
 )
 
-// Compact: 128 dimensions for smaller footprint
+// Using the registry with dtype
+const registryProvider = createEmbeddingProvider({
+  type: 'local:mdbr-leaf',
+  dimensions: 256,
+  dtype: 'fp16'
+})
+
+// Compact: 128 dimensions with 4-bit quantization
 const compactProvider = new MDBRLeafEmbeddingProvider(
   'MongoDB/mdbr-leaf-ir',
-  128
+  128,
+  'q4'
 )
 ```
 
