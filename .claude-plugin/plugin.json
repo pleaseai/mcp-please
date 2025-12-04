@@ -1,0 +1,32 @@
+{
+  "name": "mcp-gateway",
+  "version": "0.2.5-beta.1",
+  "description": "MCP gateway server for tool discovery with regex, BM25, embedding, and hybrid search",
+  "author": {
+    "name": "Minsu Lee",
+    "email": "minsu.lee@passionfactory.ai",
+    "url": "https://passionfactory.ai"
+  },
+  "homepage": "https://github.com/pleaseai/mcp-gateway",
+  "repository": "https://github.com/pleaseai/mcp-gateway",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "tool-search",
+    "claude-code",
+    "pleaseai",
+    "gateway"
+  ],
+  "mcpServers": {
+    "mcp-gateway": {
+      "command": "npx",
+      "args": [
+        "@pleaseai/mcp-gateway@beta",
+        "serve",
+        "--mode",
+        "embedding"
+      ]
+    }
+  }
+}

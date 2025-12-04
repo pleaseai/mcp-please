@@ -46,6 +46,16 @@ mcp-gateway/
 
 ## Installation
 
+### Claude Code Plugin
+
+```bash
+# Add the marketplace
+/plugin marketplace add pleaseai/claude-code-plugins
+
+# Install the plugin
+/plugin install mcp-gateway@pleaseai
+```
+
 ### Homebrew (macOS/Linux)
 
 ```bash

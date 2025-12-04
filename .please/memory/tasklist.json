@@ -1,0 +1,36 @@
+{
+  "session_id": "20251204-hybrid-search",
+  "feature_name": "Hybrid Search (BM25 + Embedding with RRF)",
+  "created_at": "2025-12-04T23:45:00Z",
+  "updated_at": "2025-12-04T23:45:00Z",
+  "status": "completed",
+  "current_phase": 8,
+  "pr_number": 29,
+  "issue_number": 23,
+  "phases": [
+    { "number": 1, "name": "Discovery", "status": "completed", "started_at": "2025-12-04T23:45:00Z", "completed_at": "2025-12-04T23:47:00Z" },
+    { "number": 2, "name": "Codebase Exploration", "status": "completed", "started_at": "2025-12-04T23:47:00Z", "completed_at": "2025-12-04T23:55:00Z" },
+    { "number": 3, "name": "Clarifying Questions", "status": "completed", "started_at": "2025-12-04T23:55:00Z", "completed_at": "2025-12-04T23:58:00Z" },
+    { "number": 4, "name": "Architecture Design", "status": "completed", "started_at": "2025-12-04T23:58:00Z", "completed_at": "2025-12-05T00:05:00Z" },
+    { "number": 5, "name": "GitHub Issue & PR", "status": "completed", "started_at": "2025-12-05T00:05:00Z", "completed_at": "2025-12-05T00:08:00Z" },
+    { "number": 6, "name": "Implementation", "status": "completed", "started_at": "2025-12-05T00:08:00Z", "completed_at": "2025-12-05T00:16:00Z" },
+    { "number": 7, "name": "Quality Review", "status": "completed", "started_at": "2025-12-05T00:16:00Z", "completed_at": "2025-12-05T00:25:00Z" },
+    { "number": 8, "name": "PR Finalization", "status": "completed", "started_at": "2025-12-05T00:25:00Z", "completed_at": "2025-12-05T00:28:00Z" }
+  ],
+  "tasks": [
+    { "id": "T001", "title": "Add 'hybrid' to SearchMode type", "phase": 6, "status": "completed", "parallel": true, "dependencies": [], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T002", "title": "Create HybridSearchStrategy", "phase": 6, "status": "completed", "parallel": true, "dependencies": [], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T003", "title": "Register hybrid in SearchOrchestrator", "phase": 6, "status": "completed", "parallel": false, "dependencies": ["T001", "T002"], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T004", "title": "Export HybridSearchStrategy from core", "phase": 6, "status": "completed", "parallel": true, "dependencies": [], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T005", "title": "Add 'hybrid' to MCP server Zod enum", "phase": 6, "status": "completed", "parallel": true, "dependencies": [], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T006", "title": "Update CLI help text", "phase": 6, "status": "completed", "parallel": true, "dependencies": [], "completed_at": "2025-12-05T00:15:00Z" },
+    { "id": "T007", "title": "Create unit tests", "phase": 6, "status": "completed", "parallel": false, "dependencies": ["T002"], "completed_at": "2025-12-05T00:15:00Z" }
+  ],
+  "branch": "23-feat-hybrid-search-1",
+  "checkpoint_config": {
+    "mode": "auto",
+    "push_strategy": "batch",
+    "validation_required": true
+  },
+  "checkpoints": []
+}
