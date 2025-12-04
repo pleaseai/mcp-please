@@ -1,6 +1,6 @@
 # MCP Gateway
 
-[![npm version](https://img.shields.io/npm/v/@pleaseai/mcp.svg)](https://www.npmjs.com/package/@pleaseai/mcp)
+[![npm version](https://img.shields.io/npm/v/@pleaseai/mcp-gateway.svg)](https://www.npmjs.com/package/@pleaseai/mcp-gateway)
 [![npm version](https://img.shields.io/npm/v/@pleaseai/mcp-core.svg)](https://www.npmjs.com/package/@pleaseai/mcp-core)
 [![codecov](https://codecov.io/gh/pleaseai/mcp-gateway/graph/badge.svg)](https://codecov.io/gh/pleaseai/mcp-gateway)
 [![code style](https://antfu.me/badge-code-style.svg)](https://github.com/antfu/eslint-config)
@@ -13,7 +13,7 @@ MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **seman
 mcp-gateway/
 ├── packages/
 │   ├── core/                # Core search engine (@pleaseai/mcp-core)
-│   └── mcp/                 # CLI + MCP server (@pleaseai/mcp)
+│   └── mcp/                 # CLI + MCP server (@pleaseai/mcp-gateway)
 ├── turbo.json               # Turbo build configuration
 └── package.json             # Root workspace configuration
 ```
@@ -48,9 +48,9 @@ mcp-gateway/
 
 ```bash
 # Using npm/npx (recommended)
-npx @pleaseai/mcp index <tool-sources>
-npx @pleaseai/mcp search "query"
-npx @pleaseai/mcp serve
+npx @pleaseai/mcp-gateway index <tool-sources>
+npx @pleaseai/mcp-gateway search "query"
+npx @pleaseai/mcp-gateway serve
 
 # Development setup
 bun install
@@ -65,29 +65,29 @@ Build a search index from tool definitions or MCP servers:
 
 ```bash
 # Index from configured MCP servers (reads from .please/mcp.json)
-npx @pleaseai/mcp index
+npx @pleaseai/mcp-gateway index
 
 # Index from specific JSON/YAML files
-npx @pleaseai/mcp index tools.json
+npx @pleaseai/mcp-gateway index tools.json
 
 # Index without embeddings (faster, BM25/regex only)
-npx @pleaseai/mcp index --no-embeddings
+npx @pleaseai/mcp-gateway index --no-embeddings
 
 # Index with local embeddings (default: local:minilm)
-npx @pleaseai/mcp index
+npx @pleaseai/mcp-gateway index
 
 # Index with specific provider
-npx @pleaseai/mcp index -p local:mdbr-leaf
-npx @pleaseai/mcp index -p api:openai
+npx @pleaseai/mcp-gateway index -p local:mdbr-leaf
+npx @pleaseai/mcp-gateway index -p api:openai
 
 # Exclude specific MCP servers
-npx @pleaseai/mcp index --exclude server1,server2
+npx @pleaseai/mcp-gateway index --exclude server1,server2
 
 # Custom output path (default: .please/mcp/index.json)
-npx @pleaseai/mcp index -o ./my-index.json
+npx @pleaseai/mcp-gateway index -o ./my-index.json
 
 # Force overwrite existing index
-npx @pleaseai/mcp index -f
+npx @pleaseai/mcp-gateway index -f
 ```
 
 ### Search Tools
@@ -96,19 +96,19 @@ Search for tools in the index:
 
 ```bash
 # BM25 search (default)
-npx @pleaseai/mcp search "file operations"
+npx @pleaseai/mcp-gateway search "file operations"
 
 # Regex search
-npx @pleaseai/mcp search "read.*file" --mode regex
+npx @pleaseai/mcp-gateway search "read.*file" --mode regex
 
 # Semantic search
-npx @pleaseai/mcp search "tools for sending messages" --mode embedding
+npx @pleaseai/mcp-gateway search "tools for sending messages" --mode embedding
 
 # Limit results
-npx @pleaseai/mcp search "database" -k 5
+npx @pleaseai/mcp-gateway search "database" -k 5
 
 # JSON output
-npx @pleaseai/mcp search "database" --format json
+npx @pleaseai/mcp-gateway search "database" --format json
 ```
 
 ### Start MCP Server
@@ -117,16 +117,16 @@ Start the MCP server for tool search:
 
 ```bash
 # Default (stdio transport, reads from .please/mcp/index.json)
-npx @pleaseai/mcp serve
+npx @pleaseai/mcp-gateway serve
 
 # Or just (serve is the default command)
-npx @pleaseai/mcp
+npx @pleaseai/mcp-gateway
 
 # Specify index path
-npx @pleaseai/mcp serve -i ./data/index.json
+npx @pleaseai/mcp-gateway serve -i ./data/index.json
 
 # Set default search mode
-npx @pleaseai/mcp serve -m embedding
+npx @pleaseai/mcp-gateway serve -m embedding
 ```
 
 ### Install to IDE
@@ -135,25 +135,25 @@ Install MCP server configuration to your IDE:
 
 ```bash
 # Claude Code (default, creates .mcp.json)
-npx @pleaseai/mcp install
+npx @pleaseai/mcp-gateway install
 
 # Claude Desktop
-npx @pleaseai/mcp install --ide claude-desktop
+npx @pleaseai/mcp-gateway install --ide claude-desktop
 
 # Cursor
-npx @pleaseai/mcp install --ide cursor
+npx @pleaseai/mcp-gateway install --ide cursor
 
 # VS Code
-npx @pleaseai/mcp install --ide vscode
+npx @pleaseai/mcp-gateway install --ide vscode
 
 # Gemini CLI
-npx @pleaseai/mcp install --ide gemini
+npx @pleaseai/mcp-gateway install --ide gemini
 
 # OpenAI Codex
-npx @pleaseai/mcp install --ide codex
+npx @pleaseai/mcp-gateway install --ide codex
 
 # Preview without writing
-npx @pleaseai/mcp install --dry-run
+npx @pleaseai/mcp-gateway install --dry-run
 ```
 
 ### Manage MCP Servers
@@ -162,28 +162,28 @@ Manage MCP server configurations (similar to `claude mcp` command):
 
 ```bash
 # Add a stdio server (default scope: local)
-npx @pleaseai/mcp mcp add my-server npx -- @some/mcp-server --option value
+npx @pleaseai/mcp-gateway mcp add my-server npx -- @some/mcp-server --option value
 
 # Add an HTTP server
-npx @pleaseai/mcp mcp add notion --transport http https://mcp.notion.com/mcp
+npx @pleaseai/mcp-gateway mcp add notion --transport http https://mcp.notion.com/mcp
 
 # Add with environment variables
-npx @pleaseai/mcp mcp add my-server npx @some/mcp -e API_KEY=xxx -e DEBUG=true
+npx @pleaseai/mcp-gateway mcp add my-server npx @some/mcp -e API_KEY=xxx -e DEBUG=true
 
 # Add to specific scope
-npx @pleaseai/mcp mcp add my-server npx @some/mcp --scope project
-npx @pleaseai/mcp mcp add my-server npx @some/mcp --scope user
+npx @pleaseai/mcp-gateway mcp add my-server npx @some/mcp --scope project
+npx @pleaseai/mcp-gateway mcp add my-server npx @some/mcp --scope user
 
 # List all configured servers
-npx @pleaseai/mcp mcp list
-npx @pleaseai/mcp mcp ls --format json
+npx @pleaseai/mcp-gateway mcp list
+npx @pleaseai/mcp-gateway mcp ls --format json
 
 # Get server details
-npx @pleaseai/mcp mcp get my-server
+npx @pleaseai/mcp-gateway mcp get my-server
 
 # Remove a server
-npx @pleaseai/mcp mcp remove my-server
-npx @pleaseai/mcp mcp rm my-server --scope project
+npx @pleaseai/mcp-gateway mcp remove my-server
+npx @pleaseai/mcp-gateway mcp rm my-server --scope project
 ```
 
 **Configuration Scopes:**
@@ -243,7 +243,7 @@ Core search engine with:
 - Embedding providers (Local MiniLM, Local MDBR-Leaf, OpenAI, Voyage AI)
 - Index management (loader, builder, storage)
 
-### @pleaseai/mcp
+### @pleaseai/mcp-gateway
 
 CLI + MCP server exposing:
 - `index` - Build search index from tool definitions or MCP servers
