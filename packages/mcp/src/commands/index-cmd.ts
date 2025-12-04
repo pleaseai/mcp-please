@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType, ToolDefinition } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype, ToolDefinition } from '@pleaseai/mcp-core'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
@@ -25,6 +25,11 @@ export function createIndexCommand(): Command {
       DEFAULT_EMBEDDING_PROVIDER,
     )
     .option('-m, --model <name>', 'Embedding model name')
+    .option(
+      '-d, --dtype <type>',
+      'Model dtype: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')
     .option('--exclude <servers>', 'Comma-separated list of MCP servers to exclude')
@@ -32,6 +37,15 @@ export function createIndexCommand(): Command {
       const spinner = ora('Loading tools...').start()
 
       try {
+        // Validate dtype option
+        const VALID_DTYPES = ['fp32', 'fp16', 'q8', 'q4', 'q4f16'] as const
+        if (!VALID_DTYPES.includes(options.dtype)) {
+          spinner.fail(`Invalid dtype: "${options.dtype}"`)
+          error(`Valid options: ${VALID_DTYPES.join(', ')}`)
+          process.exit(1)
+        }
+        const dtype = options.dtype as ModelDtype
+
         // Create index manager
         const indexManager = new IndexManager()
         const indexBuilder = new IndexBuilder()
@@ -40,17 +54,24 @@ export function createIndexCommand(): Command {
         if (options.embeddings) {
           const providerType = options.provider as EmbeddingProviderType
 
+          // Warn if dtype is specified with API providers
+          if (providerType.startsWith('api:') && dtype !== 'fp32') {
+            warn(`dtype "${dtype}" is ignored for API providers (only applies to local providers)`)
+          }
+
           spinner.text = `Initializing ${providerType} embedding provider...`
 
           const provider = createEmbeddingProvider({
             type: providerType,
             model: options.model,
+            dtype,
           })
 
           await provider.initialize()
           indexManager.setEmbeddingProvider(provider)
 
-          info(`Using ${providerType} embeddings (${provider.dimensions} dimensions)`)
+          const dtypeInfo = providerType.startsWith('local:') ? `, dtype: ${dtype}` : ''
+          info(`Using ${providerType} embeddings (${provider.dimensions} dimensions${dtypeInfo})`)
         }
 
         // Check if index exists

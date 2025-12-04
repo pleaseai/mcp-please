@@ -16,7 +16,7 @@ describe('index command', () => {
 
   afterAll(() => {
     // Cleanup test outputs
-    const files = ['index-minilm.json', 'index-mdbr.json', 'index-no-embed.json']
+    const files = ['index-minilm.json', 'index-mdbr.json', 'index-no-embed.json', 'index-dtype.json']
     for (const file of files) {
       const path = join(TEST_OUTPUT_DIR, file)
       if (existsSync(path)) {
@@ -63,5 +63,30 @@ describe('index command', () => {
 
     expect(exitCode).toBe(1)
     expect(stderr).toContain('Unknown embedding provider type')
+  })
+
+  test('should reject invalid dtype', async () => {
+    const outputPath = join(TEST_OUTPUT_DIR, 'index-invalid-dtype.json')
+
+    const proc = Bun.spawn(['bun', CLI_PATH, 'index', EXAMPLES_PATH, '-o', outputPath, '-d', 'invalid-dtype', '-f'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+
+    const exitCode = await proc.exited
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(exitCode).toBe(1)
+    expect(stderr).toContain('Invalid dtype')
+    expect(stderr).toContain('fp32, fp16, q8, q4, q4f16')
+  })
+
+  test('should accept valid dtype option', async () => {
+    const outputPath = join(TEST_OUTPUT_DIR, 'index-dtype.json')
+
+    const result = await $`bun ${CLI_PATH} index ${EXAMPLES_PATH} -o ${outputPath} -d fp32 --no-embeddings -f`.text()
+
+    expect(result).toContain('Index saved to')
+    expect(existsSync(outputPath)).toBe(true)
   })
 })

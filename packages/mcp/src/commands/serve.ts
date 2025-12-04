@@ -1,4 +1,4 @@
-import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, ModelDtype, SearchMode } from '@pleaseai/mcp-core'
 import fs from 'node:fs'
 import process from 'node:process'
 import { createEmbeddingProvider, IndexBuilder, IndexManager } from '@pleaseai/mcp-core'
@@ -24,15 +24,34 @@ export function createServeCommand(): Command {
       'Embedding provider: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
       DEFAULT_EMBEDDING_PROVIDER,
     )
+    .option(
+      '--dtype <type>',
+      'Model dtype: fp32 | fp16 | q8 | q4 | q4f16 (default: fp32)',
+      'fp32',
+    )
     .action(async (options) => {
       const spinner = ora('Starting MCP server...').start()
 
       try {
+        // Validate dtype option
+        const VALID_DTYPES = ['fp32', 'fp16', 'q8', 'q4', 'q4f16'] as const
+        if (!VALID_DTYPES.includes(options.dtype)) {
+          spinner.fail(`Invalid dtype: "${options.dtype}"`)
+          error(`Valid options: ${VALID_DTYPES.join(', ')}`)
+          process.exit(1)
+        }
+
         const transport = options.transport as 'stdio' | 'http'
         const port = Number.parseInt(options.port, 10)
         const defaultMode = options.mode as SearchMode
         const providerType = options.provider as EmbeddingProviderType
+        const dtype = options.dtype as ModelDtype
         const indexPath = options.index as string
+
+        // Warn if dtype is specified with API providers
+        if (providerType.startsWith('api:') && dtype !== 'fp32') {
+          warn(`dtype "${dtype}" is ignored for API providers (only applies to local providers)`)
+        }
 
         // Check if index exists, if not create it automatically
         if (!fs.existsSync(indexPath)) {
@@ -53,7 +72,7 @@ export function createServeCommand(): Command {
           // Setup embedding provider if using embedding mode
           let autoIndexEmbeddingProvider = null
           if (defaultMode === 'embedding') {
-            autoIndexEmbeddingProvider = createEmbeddingProvider({ type: providerType })
+            autoIndexEmbeddingProvider = createEmbeddingProvider({ type: providerType, dtype })
             await autoIndexEmbeddingProvider.initialize()
             indexManager.setEmbeddingProvider(autoIndexEmbeddingProvider)
           }
@@ -106,6 +125,7 @@ export function createServeCommand(): Command {
         // Create embedding provider
         const embeddingProvider = createEmbeddingProvider({
           type: providerType,
+          dtype,
         })
 
         // Create server

@@ -1,3 +1,4 @@
+import type { ModelDtype } from '../../types/index.js'
 import type { EmbeddingProvider } from '../provider.js'
 
 // Simplified type for transformers.js pipeline
@@ -22,14 +23,17 @@ export class MDBRLeafEmbeddingProvider implements EmbeddingProvider {
   private extractor: Pipeline | null = null
   private modelName: string
   private targetDimensions: number
+  private dtype: ModelDtype
 
   /**
    * @param modelName - Model name (default: MongoDB/mdbr-leaf-ir)
    * @param dimensions - Target dimensions for MRL truncation (default: 256)
+   * @param dtype - Model dtype for inference (default: 'fp32')
    */
-  constructor(modelName?: string, dimensions?: number) {
+  constructor(modelName?: string, dimensions?: number, dtype?: ModelDtype) {
     this.modelName = modelName ?? 'MongoDB/mdbr-leaf-ir'
     this.targetDimensions = dimensions ?? 256
+    this.dtype = dtype ?? 'fp32'
   }
 
   get dimensions(): number {
@@ -42,9 +46,18 @@ export class MDBRLeafEmbeddingProvider implements EmbeddingProvider {
 
     const { pipeline } = await import('@huggingface/transformers')
 
-    this.extractor = await pipeline('feature-extraction', this.modelName, {
-      dtype: 'fp32',
-    })
+    try {
+      this.extractor = await pipeline('feature-extraction', this.modelName, {
+        dtype: this.dtype,
+      })
+    }
+    catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `Failed to initialize embedding model "${this.modelName}" with dtype "${this.dtype}": ${message}. `
+        + `Try using dtype "fp32" as a fallback.`,
+      )
+    }
   }
 
   async embed(text: string): Promise<number[]> {

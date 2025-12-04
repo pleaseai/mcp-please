@@ -163,6 +163,28 @@ describe('EmbeddingProviderRegistry', () => {
     expect(provider.dimensions).toBe(128)
   })
 
+  test('should create local:minilm with custom dtype', () => {
+    // This test verifies that dtype is passed through without error
+    // Actual dtype behavior is tested at initialization time
+    const provider = createEmbeddingProvider({
+      type: 'local:minilm',
+      dtype: 'q8',
+    })
+
+    expect(provider.name).toBe('local:minilm')
+  })
+
+  test('should create local:mdbr-leaf with custom dtype', () => {
+    const provider = createEmbeddingProvider({
+      type: 'local:mdbr-leaf',
+      dtype: 'fp16',
+      dimensions: 256,
+    })
+
+    expect(provider.name).toBe('local:mdbr-leaf')
+    expect(provider.dimensions).toBe(256)
+  })
+
   test('should throw for unknown provider type', () => {
     expect(() =>
       createEmbeddingProvider({ type: 'unknown' as any }),
