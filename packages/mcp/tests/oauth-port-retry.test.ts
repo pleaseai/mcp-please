@@ -204,12 +204,8 @@ describe('oauth-port-retry', () => {
       expect(port).toBe(testPort)
     })
 
-    test('should return actualCallbackPort when set', async () => {
+    test('should return actualCallbackPort when set', () => {
       const testPort = getTestPortBase()
-
-      // Occupy the default port to force fallback
-      await occupyPort(testPort)
-
       const manager = new OAuthManager(
         {
           serverName: 'test-server',
@@ -219,15 +215,12 @@ describe('oauth-port-retry', () => {
         },
         { debug: false },
       )
-
-      // Simulate what authorize() does
-      const findPort = (manager as any).findAvailablePort.bind(manager);
-      (manager as any).actualCallbackPort = await findPort()
-
+      // Directly set the property for a true unit test
+      const expectedPort = testPort + 5;
+      (manager as any).actualCallbackPort = expectedPort
       const getPort = (manager as any).getCallbackPort.bind(manager)
       const port = getPort()
-
-      expect(port).toBe(testPort + 1)
+      expect(port).toBe(expectedPort)
     })
   })
 })

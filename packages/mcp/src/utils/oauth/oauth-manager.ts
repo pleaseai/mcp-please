@@ -99,6 +99,7 @@ export class OAuthManager {
   private isPortAvailable(port: number): Promise<boolean> {
     return new Promise((resolve) => {
       const server = createServer()
+      server.unref() // Prevent server from keeping the process alive
       server.once('error', (err: NodeJS.ErrnoException) => {
         if (err.code !== 'EADDRINUSE') {
           this.logger.debug(`Port ${port} check failed: ${err.code} - ${err.message}`)
