@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4-beta.1](https://github.com/pleaseai/mcp-gateway/compare/core-v0.1.3-beta.1...core-v0.1.4-beta.1) (2025-12-04)
+
+
+### Features
+
+* **embedding:** add dtype option for local embedding providers ([#18](https://github.com/pleaseai/mcp-gateway/issues/18)) ([c55ea4d](https://github.com/pleaseai/mcp-gateway/commit/c55ea4d1bcf617310b02a6bdae571f9c440697f8))
+
 ## [0.1.3-beta.1](https://github.com/pleaseai/mcp-please/compare/core-v0.1.2-beta.1...core-v0.1.3-beta.1) (2025-12-03)
 
 
