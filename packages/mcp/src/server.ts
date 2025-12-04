@@ -18,8 +18,7 @@ import { generateCliUsage } from './utils/cli-usage.js'
  * Available tools:
  * - search_tools: Search for tools using regex, BM25, or semantic search
  * - list_tools: List all tools in the index with pagination
- * - get_tool: Get detailed tool information including schemas
- * - call_tool: Execute a tool (requires MCP client integration)
+ * - get_tool: Get detailed tool information including schemas and CLI usage
  * - tool_search_info: Get index metadata
  */
 export class McpToolSearchServer {
@@ -50,7 +49,7 @@ export class McpToolSearchServer {
     })
 
     this.server = new McpServer({
-      name: 'pleaseai-mcp',
+      name: 'mcp-gateway',
       version: '1.0.0',
     })
 
@@ -360,79 +359,6 @@ RECOMMENDED: Use the cliUsage command via Bash tool instead of call_tool for bet
         }
       },
     )
-
-    // Call tool - executes a tool on its source MCP server
-    // Commented out: call_tool registration disabled
-    // this.server.registerTool(
-    //   'call_tool',
-    //   {
-    //     title: 'Call Tool',
-    //     description: `Execute a tool with the provided arguments. Connects to the source MCP server and returns the execution result.
-    //
-    // You MUST call 'get_tool' first to obtain the exact input schema required to use this tool. The inputSchema from get_tool contains all required fields - missing required fields will cause errors.
-    //
-    // Response Format:
-    // - On success: Returns the tool's output content (text, data, or binary)
-    // - On error: Returns error message with details about what went wrong
-    //
-    // Common Errors:
-    // - Missing required fields: Check get_tool response for requiredFields
-    // - Server not configured: The MCP server for this tool is not in your configuration
-    // - Authentication required: OAuth session expired or not configured
-    //
-    // IMPORTANT: For Claude Code users, prefer using the CLI command from 'get_tool' response (cliUsage field) via Bash tool instead of this call_tool. The CLI approach enables proper permission checks and better error handling.`,
-    //     inputSchema: {
-    //       name: z.string().describe('The name of the tool to execute (from search_tools or get_tool)'),
-    //       arguments: z.record(z.string(), z.unknown()).optional().default({}).describe('Arguments matching the inputSchema from get_tool. Include ALL required fields.'),
-    //     },
-    //   },
-    //   async ({ name, arguments: args }) => {
-    //     // Use ToolExecutor for unified tool execution logic
-    //     const result = await this.toolExecutor.execute(name, args as Record<string, unknown>)
-    //
-    //     if (!result.success) {
-    //       return {
-    //         content: [
-    //           {
-    //             type: 'text' as const,
-    //             text: JSON.stringify({
-    //               error: result.message,
-    //               ...(result.hint && { hint: result.hint }),
-    //             }),
-    //           },
-    //         ],
-    //         isError: true,
-    //       }
-    //     }
-    //
-    //     // Transform content blocks for MCP response
-    //     return {
-    //       content: result.result.content.map((c) => {
-    //         // Binary data (type='data') without text is converted to text representation
-    //         if (c.type === 'data' && c.data && !c.text) {
-    //           return {
-    //             type: 'text' as const,
-    //             text: `[Binary data: ${c.mimeType}]`,
-    //           }
-    //         }
-    //         // For image/audio/resource types with binary data, preserve them
-    //         if (c.type === 'image' && c.data && c.mimeType) {
-    //           return {
-    //             type: 'image' as const,
-    //             data: c.data,
-    //             mimeType: c.mimeType,
-    //           }
-    //         }
-    //         // Default: treat as text content
-    //         return {
-    //           type: 'text' as const,
-    //           text: c.text ?? '',
-    //         }
-    //       }),
-    //       isError: result.result.isError,
-    //     }
-    //   },
-    // )
   }
 
   /**

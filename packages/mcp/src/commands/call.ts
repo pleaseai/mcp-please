@@ -62,19 +62,45 @@ export function executeToolDirect(toolName: string, argv: string[]): void {
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
-    if ((arg === '-a' || arg === '--args') && argv[i + 1]) {
-      args = parseArgs(argv[++i])
+    if (arg === '-a' || arg === '--args') {
+      if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+        error('--args requires a JSON argument value')
+        process.exit(1)
+      }
+      try {
+        args = parseArgs(argv[++i])
+      }
+      catch (err) {
+        error(err instanceof Error ? err.message : String(err))
+        process.exit(1)
+      }
     }
-    else if ((arg === '-i' || arg === '--index') && argv[i + 1]) {
+    else if (arg === '-i' || arg === '--index') {
+      if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+        error('--index requires a path value')
+        process.exit(1)
+      }
       indexPath = argv[++i]
     }
-    else if ((arg === '-f' || arg === '--format') && argv[i + 1]) {
-      format = argv[++i] as CallOutputFormat
+    else if (arg === '-f' || arg === '--format') {
+      if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+        error('--format requires a value (json or minimal)')
+        process.exit(1)
+      }
+      const formatValue = argv[++i]
+      if (formatValue !== 'json' && formatValue !== 'minimal') {
+        error(`Invalid format '${formatValue}'. Valid formats are: json, minimal`)
+        process.exit(1)
+      }
+      format = formatValue
     }
   }
 
-  // Execute tool
-  executeCall(toolName, args, indexPath, format)
+  // Execute tool with proper error handling for async operation
+  executeCall(toolName, args, indexPath, format).catch((err) => {
+    error(err instanceof Error ? err.message : String(err))
+    process.exit(1)
+  })
 }
 
 /**
@@ -86,28 +112,21 @@ async function executeCall(
   indexPath: string,
   format: CallOutputFormat,
 ): Promise<void> {
-  try {
-    const indexManager = new IndexManager()
-    const executor = createToolExecutor({
-      getIndex: () => indexManager.loadIndex(indexPath),
-    })
+  const indexManager = new IndexManager()
+  const executor = createToolExecutor({
+    getIndex: () => indexManager.loadIndex(indexPath),
+  })
 
-    const result = await executor.execute(toolName, args)
+  const result = await executor.execute(toolName, args)
 
-    if (result.success) {
-      console.log(formatCallResult(result, format))
-      if (result.result.isError) {
-        process.exit(1)
-      }
-    }
-    else {
-      error(formatCallError(result, format))
+  if (result.success) {
+    console.log(formatCallResult(result, format))
+    if (result.result.isError) {
       process.exit(1)
     }
   }
-  catch (err) {
-    error(err instanceof Error ? err.message : String(err))
-    process.exit(1)
+  else {
+    throw new Error(formatCallError(result, format))
   }
 }
 
@@ -138,21 +157,27 @@ export function createCallCommand(): Command {
     .option('-i, --index <path>', 'Path to index file', DEFAULT_INDEX_PATH)
     .addOption(new Option('-f, --format <format>', 'Output format: json | minimal').choices(['json', 'minimal']).default('json'))
     .action(async (toolName: string, options) => {
-      // Parse arguments from --args flag or stdin
-      let args: Record<string, unknown> = {}
+      try {
+        // Parse arguments from --args flag or stdin
+        let args: Record<string, unknown> = {}
 
-      if (options.args) {
-        args = parseArgs(options.args)
-      }
-      else if (!process.stdin.isTTY) {
-        // Read from stdin if not a TTY (i.e., data is being piped)
-        const stdinData = await readStdin()
-        if (stdinData.trim()) {
-          args = parseArgs(stdinData)
+        if (options.args) {
+          args = parseArgs(options.args)
         }
-      }
+        else if (!process.stdin.isTTY) {
+          // Read from stdin if not a TTY (i.e., data is being piped)
+          const stdinData = await readStdin()
+          if (stdinData.trim()) {
+            args = parseArgs(stdinData)
+          }
+        }
 
-      await executeCall(toolName, args, options.index, options.format as CallOutputFormat)
+        await executeCall(toolName, args, options.index, options.format as CallOutputFormat)
+      }
+      catch (err) {
+        error(err instanceof Error ? err.message : String(err))
+        process.exit(1)
+      }
     })
 
   return cmd
