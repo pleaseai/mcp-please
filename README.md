@@ -411,6 +411,7 @@ Tool definitions follow the MCP tool specification:
 
 ## Documentation
 
+- [Search Architecture](./docs/search-architecture.md) - How the search engine works (strategies, indexing, no vector DB)
 - [Embedding Model Comparison](./docs/embedding-models.md) - Benchmark results and recommendations for local embedding models
 
 ## References
