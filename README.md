@@ -382,6 +382,10 @@ Tool definitions follow the MCP tool specification:
 }
 ```
 
+## Documentation
+
+- [Embedding Model Comparison](./docs/embedding-models.md) - Benchmark results and recommendations for local embedding models
+
 ## References
 
 - [Tool Search Tool - Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)
