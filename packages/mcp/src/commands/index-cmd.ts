@@ -86,6 +86,14 @@ export function createIndexCommand(): Command {
 
         let tools: ToolDefinition[] = []
         const exclude = options.exclude ? options.exclude.split(',').map((s: string) => s.trim()) : undefined
+        const providerType = options.provider as EmbeddingProviderType
+
+        // Create build metadata once to avoid duplication
+        const buildMetadata = {
+          cliVersion: getCliVersion(),
+          cliArgs: { provider: providerType, dtype, exclude },
+          configFingerprints: createAllConfigFingerprints(),
+        }
 
         // If no sources provided, load from MCP servers
         if (!sources || sources.length === 0) {
@@ -141,14 +149,7 @@ export function createIndexCommand(): Command {
 
           // Save index and exit (file-based flow)
           spinner.text = 'Saving index...'
-          const providerType = options.provider as EmbeddingProviderType
-          await indexManager.saveIndex(indexedTools, options.output, {
-            buildMetadata: {
-              cliVersion: getCliVersion(),
-              cliArgs: { provider: providerType, dtype, exclude },
-              configFingerprints: createAllConfigFingerprints(),
-            },
-          })
+          await indexManager.saveIndex(indexedTools, options.output, { buildMetadata })
 
           spinner.succeed(`Indexed ${indexedTools.length} tools`)
           success(`Index saved to ${options.output}`)
@@ -177,14 +178,7 @@ export function createIndexCommand(): Command {
 
         // Save index with build metadata
         spinner.text = 'Saving index...'
-        const mcpProviderType = options.provider as EmbeddingProviderType
-        await indexManager.saveIndex(indexedTools, options.output, {
-          buildMetadata: {
-            cliVersion: getCliVersion(),
-            cliArgs: { provider: mcpProviderType, dtype, exclude },
-            configFingerprints: createAllConfigFingerprints(),
-          },
-        })
+        await indexManager.saveIndex(indexedTools, options.output, { buildMetadata })
 
         spinner.succeed(`Indexed ${indexedTools.length} tools from MCP servers`)
         success(`Index saved to ${options.output}`)

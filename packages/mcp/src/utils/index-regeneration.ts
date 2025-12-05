@@ -17,6 +17,7 @@ export interface CurrentArgs {
   mode?: string
   provider?: string
   dtype?: string
+  exclude?: string[]
 }
 
 /**
@@ -27,11 +28,8 @@ export interface CurrentArgs {
  * 2. Index file corrupted or invalid
  * 3. Legacy index (no build metadata)
  * 4. CLI version changed
- * 5. CLI args changed (mode, provider, dtype)
+ * 5. CLI args changed (mode, provider, dtype, exclude)
  * 6. Config file added/removed/modified
- *
- * Note: The `exclude` option is only available in `index` command.
- * If you need to change which servers are excluded, run `mcp-gateway index` manually.
  */
 export async function checkIndexRegeneration(
   indexPath: string,
@@ -80,6 +78,15 @@ export async function checkIndexRegeneration(
   }
   if (storedArgs.dtype !== currentArgs.dtype) {
     reasons.push(`Model dtype changed: ${storedArgs.dtype || 'default'} → ${currentArgs.dtype || 'default'}`)
+  }
+
+  // Compare sorted exclude arrays to handle order differences
+  const storedExclude = (storedArgs.exclude ?? []).slice().sort()
+  const currentExclude = (currentArgs.exclude ?? []).slice().sort()
+  if (JSON.stringify(storedExclude) !== JSON.stringify(currentExclude)) {
+    reasons.push(
+      `Excluded servers changed: ${storedArgs.exclude?.join(', ') || 'none'} → ${currentArgs.exclude?.join(', ') || 'none'}`,
+    )
   }
 
   // Condition 6: Config files changed

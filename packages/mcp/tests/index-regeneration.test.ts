@@ -106,6 +106,35 @@ describe('index-regeneration', () => {
       expect(result.reasons.some(r => r.includes('Model dtype changed'))).toBe(true)
     })
 
+    test('should require rebuild when exclude list changed', async () => {
+      const indexPath = join(testDir, 'exclude-changed.json')
+      const index = createValidIndex({ cliArgs: { exclude: ['server-a'] } })
+      writeFileSync(indexPath, JSON.stringify(index))
+
+      const result = await checkIndexRegeneration(indexPath, { exclude: ['server-b'] })
+
+      expect(result.needsRebuild).toBe(true)
+      expect(result.reasons.some(r => r.includes('Excluded servers changed'))).toBe(true)
+    })
+
+    test('should not require rebuild when exclude list has same items in different order', async () => {
+      const indexPath = join(testDir, 'exclude-same.json')
+      const currentVersion = getCliVersion()
+      const index = createValidIndex({
+        cliVersion: currentVersion,
+        cliArgs: { exclude: ['server-a', 'server-b'] },
+      })
+      writeFileSync(indexPath, JSON.stringify(index))
+
+      const result = await checkIndexRegeneration(
+        indexPath,
+        { exclude: ['server-b', 'server-a'] },
+        testDir,
+      )
+
+      expect(result.needsRebuild).toBe(false)
+    })
+
     test('should not require rebuild when nothing changed', async () => {
       const indexPath = join(testDir, 'unchanged.json')
       const currentVersion = getCliVersion()
