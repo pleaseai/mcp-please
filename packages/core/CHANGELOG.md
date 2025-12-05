@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7-beta.1](https://github.com/pleaseai/mcp-gateway/compare/core-v0.1.6-beta.1...core-v0.1.7-beta.1) (2025-12-05)
+
+
+### Features
+
+* **mcp:** implement scope-based index storage ([#38](https://github.com/pleaseai/mcp-gateway/issues/38)) ([afb5e25](https://github.com/pleaseai/mcp-gateway/commit/afb5e25dac96104ab6a93f3f70f9064356e019ae))
+
 ## [0.1.6-beta.1](https://github.com/pleaseai/mcp-gateway/compare/core-v0.1.5-beta.1...core-v0.1.6-beta.1) (2025-12-05)
 
 
