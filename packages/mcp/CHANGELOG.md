@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.6-beta.1](https://github.com/pleaseai/mcp-gateway/compare/mcp-v0.2.5-beta.1...mcp-v0.2.6-beta.1) (2025-12-05)
+
+
+### Features
+
+* **mcp:** implement automatic index regeneration on serve ([#34](https://github.com/pleaseai/mcp-gateway/issues/34)) ([8403416](https://github.com/pleaseai/mcp-gateway/commit/840341609e197aa88f30a86e4d60709de93f7301))
+
+
+### Bug Fixes
+
+* **mcp:** add [@beta](https://github.com/beta) tag to CLI usage templates ([#36](https://github.com/pleaseai/mcp-gateway/issues/36)) ([aa4f677](https://github.com/pleaseai/mcp-gateway/commit/aa4f677812c2c0820fc5ce62d330df1ecee5bab9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/mcp-core bumped to 0.1.6-beta.1
+
 ## [0.2.5-beta.1](https://github.com/pleaseai/mcp-gateway/compare/mcp-v0.2.4-beta.1...mcp-v0.2.5-beta.1) (2025-12-04)
 
 

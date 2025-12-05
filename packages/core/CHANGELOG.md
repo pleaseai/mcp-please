@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6-beta.1](https://github.com/pleaseai/mcp-gateway/compare/core-v0.1.5-beta.1...core-v0.1.6-beta.1) (2025-12-05)
+
+
+### Features
+
+* **mcp:** implement automatic index regeneration on serve ([#34](https://github.com/pleaseai/mcp-gateway/issues/34)) ([8403416](https://github.com/pleaseai/mcp-gateway/commit/840341609e197aa88f30a86e4d60709de93f7301))
+
 ## [0.1.5-beta.1](https://github.com/pleaseai/mcp-gateway/compare/core-v0.1.4-beta.1...core-v0.1.5-beta.1) (2025-12-04)
 
 
