@@ -79,6 +79,34 @@ export function createAllConfigFingerprints(cwd?: string): {
  *
  * @returns Version string or 'unknown' if not found
  */
+/**
+ * Get config fingerprints for a specific index scope.
+ * - Project scope: tracks local + project + user configs (all can affect project index)
+ * - User scope: tracks only user config
+ *
+ * @param indexScope - The index scope ('project' or 'user')
+ * @param cwd - Current working directory
+ * @returns Config fingerprints relevant to the scope
+ */
+export function getConfigFingerprintsForScope(
+  indexScope: 'project' | 'user',
+  cwd?: string,
+): {
+  local?: ConfigFingerprint
+  project?: ConfigFingerprint
+  user?: ConfigFingerprint
+} {
+  if (indexScope === 'user') {
+    // User scope only uses user config
+    return {
+      user: createConfigFingerprint(getConfigPath('user', cwd)),
+    }
+  }
+
+  // Project scope uses all configs (local + project + user)
+  return createAllConfigFingerprints(cwd)
+}
+
 export function getCliVersion(): string {
   try {
     // Get the directory of the current module

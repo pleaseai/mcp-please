@@ -1,4 +1,5 @@
 import type { EmbeddingProviderType, ModelDtype, ToolDefinition } from '@pleaseai/mcp-core'
+import type { IndexScope } from '../types/index-scope.js'
 import process from 'node:process'
 import {
   createEmbeddingProvider,
@@ -7,8 +8,9 @@ import {
 } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
-import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH } from '../constants.js'
-import { createAllConfigFingerprints, getCliVersion } from '../utils/config-fingerprint.js'
+import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_INDEX_SCOPE } from '../constants.js'
+import { getCliVersion, getConfigFingerprintsForScope } from '../utils/config-fingerprint.js'
+import { getIndexPath } from '../utils/index-paths.js'
 import { getAllMcpServers, loadToolsFromMcpServers } from '../utils/mcp-config-loader.js'
 import { error, info, success, warn } from '../utils/output.js'
 
@@ -34,10 +36,20 @@ export function createIndexCommand(): Command {
     .option('--no-embeddings', 'Skip embedding generation')
     .option('-f, --force', 'Overwrite existing index')
     .option('--exclude <servers>', 'Comma-separated list of MCP servers to exclude')
+    .option('-s, --scope <scope>', 'Index scope: project | user', DEFAULT_INDEX_SCOPE)
     .action(async (sources: string[], options) => {
       const spinner = ora('Loading tools...').start()
 
       try {
+        // Validate scope option
+        const VALID_SCOPES = ['project', 'user'] as const
+        if (!VALID_SCOPES.includes(options.scope)) {
+          spinner.fail(`Invalid scope: "${options.scope}"`)
+          error(`Valid options: ${VALID_SCOPES.join(', ')}`)
+          process.exit(1)
+        }
+        const scope = options.scope as IndexScope
+
         // Validate dtype option
         const VALID_DTYPES = ['fp32', 'fp16', 'q8', 'q4', 'q4f16'] as const
         if (!VALID_DTYPES.includes(options.dtype)) {
@@ -75,11 +87,16 @@ export function createIndexCommand(): Command {
           info(`Using ${providerType} embeddings (${provider.dimensions} dimensions${dtypeInfo})`)
         }
 
+        // Determine output path: use explicit --output if different from default, otherwise use scope-based path
+        const outputPath = options.output !== DEFAULT_INDEX_PATH
+          ? options.output
+          : getIndexPath(scope)
+
         // Check if index exists
         if (!options.force) {
-          const exists = await indexManager.indexExists(options.output)
+          const exists = await indexManager.indexExists(outputPath)
           if (exists) {
-            spinner.fail(`Index already exists at ${options.output}. Use --force to overwrite.`)
+            spinner.fail(`Index already exists at ${outputPath}. Use --force to overwrite.`)
             process.exit(1)
           }
         }
@@ -88,26 +105,29 @@ export function createIndexCommand(): Command {
         const exclude = options.exclude ? options.exclude.split(',').map((s: string) => s.trim()) : undefined
         const providerType = options.provider as EmbeddingProviderType
 
-        // Create build metadata once to avoid duplication
+        // Create build metadata with scope-appropriate fingerprints
         const buildMetadata = {
           cliVersion: getCliVersion(),
-          cliArgs: { provider: providerType, dtype, exclude },
-          configFingerprints: createAllConfigFingerprints(),
+          cliArgs: { provider: providerType, dtype, exclude, scope },
+          configFingerprints: getConfigFingerprintsForScope(scope),
         }
 
         // If no sources provided, load from MCP servers
         if (!sources || sources.length === 0) {
-          const allServers = getAllMcpServers()
+          // Get servers for the specified scope
+          const allServers = getAllMcpServers(process.cwd(), scope)
 
           if (allServers.size === 0) {
-            spinner.fail('No MCP servers configured. Add servers with: mcp-gateway mcp add')
+            spinner.fail(`No MCP servers configured for ${scope} scope. Add servers with: mcp-gateway mcp add`)
             process.exit(1)
           }
 
-          spinner.text = `Loading tools from ${allServers.size} MCP server(s)...`
+          spinner.text = `Loading tools from ${allServers.size} MCP server(s) for ${scope} scope...`
+          info(`Scope: ${scope}`)
 
           tools = await loadToolsFromMcpServers({
             exclude,
+            indexScope: scope,
             onProgress: (serverName, status, toolCount) => {
               switch (status) {
                 case 'connecting':
@@ -149,10 +169,10 @@ export function createIndexCommand(): Command {
 
           // Save index and exit (file-based flow)
           spinner.text = 'Saving index...'
-          await indexManager.saveIndex(indexedTools, options.output, { buildMetadata })
+          await indexManager.saveIndex(indexedTools, outputPath, { buildMetadata })
 
           spinner.succeed(`Indexed ${indexedTools.length} tools`)
-          success(`Index saved to ${options.output}`)
+          success(`Index saved to ${outputPath}`)
 
           const hasEmbeddings = indexedTools.some(t => t.embedding && t.embedding.length > 0)
           info(`Embeddings: ${hasEmbeddings ? 'Yes' : 'No'}`)
@@ -178,10 +198,10 @@ export function createIndexCommand(): Command {
 
         // Save index with build metadata
         spinner.text = 'Saving index...'
-        await indexManager.saveIndex(indexedTools, options.output, { buildMetadata })
+        await indexManager.saveIndex(indexedTools, outputPath, { buildMetadata })
 
-        spinner.succeed(`Indexed ${indexedTools.length} tools from MCP servers`)
-        success(`Index saved to ${options.output}`)
+        spinner.succeed(`Indexed ${indexedTools.length} tools from MCP servers (${scope} scope)`)
+        success(`Index saved to ${outputPath}`)
 
         // Show stats
         const hasEmbeddings = indexedTools.some(t => t.embedding && t.embedding.length > 0)

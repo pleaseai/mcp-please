@@ -1,4 +1,4 @@
-import type { EmbeddingProvider, PersistedIndex, SearchMode, ServerConfig } from '@pleaseai/mcp-core'
+import type { ServerConfig as BaseServerConfig, EmbeddingProvider, PersistedIndex, SearchMode } from '@pleaseai/mcp-core'
 import type { ToolExecutor } from './services/tool-executor.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -10,6 +10,15 @@ import {
 import { z } from 'zod'
 import { createToolExecutor } from './services/tool-executor.js'
 import { generateCliUsage } from './utils/cli-usage.js'
+import { mergeBM25Stats, mergeIndexedTools } from './utils/tool-deduplication.js'
+
+/**
+ * Extended server config with multi-index support
+ */
+interface ServerConfig extends BaseServerConfig {
+  /** Multiple index paths for scope 'all' mode */
+  indexPaths?: string[]
+}
 
 /**
  * MCP Tool Search Server
@@ -42,7 +51,7 @@ export class McpToolSearchServer {
     this.toolExecutor = createToolExecutor({
       getIndex: async () => {
         if (!this.cachedIndex) {
-          this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+          this.cachedIndex = await this.loadMergedIndex()
         }
         return this.cachedIndex
       },
@@ -63,6 +72,58 @@ export class McpToolSearchServer {
     this.embeddingProvider = provider
     this.searchOrchestrator.setEmbeddingProvider(provider)
     this.indexManager.setEmbeddingProvider(provider)
+  }
+
+  /**
+   * Load and optionally merge indexes from multiple paths
+   */
+  private async loadMergedIndex(): Promise<PersistedIndex> {
+    // If multiple index paths specified, load and merge
+    if (this.config.indexPaths && this.config.indexPaths.length > 1) {
+      const [projectPath, userPath] = this.config.indexPaths
+
+      let projectIndex: PersistedIndex | null = null
+      let userIndex: PersistedIndex | null = null
+
+      try {
+        projectIndex = await this.indexManager.loadIndex(projectPath)
+      }
+      catch {
+        // Project index doesn't exist
+      }
+
+      try {
+        userIndex = await this.indexManager.loadIndex(userPath)
+      }
+      catch {
+        // User index doesn't exist
+      }
+
+      if (!projectIndex && !userIndex) {
+        throw new Error('No indexes found')
+      }
+
+      // Merge tools with project taking priority
+      const mergedTools = mergeIndexedTools(projectIndex, userIndex)
+      const mergedBm25Stats = mergeBM25Stats(projectIndex, userIndex)
+      const hasEmbeddings = (projectIndex?.hasEmbeddings ?? false) || (userIndex?.hasEmbeddings ?? false)
+
+      // Return synthetic merged index
+      return {
+        version: projectIndex?.version ?? userIndex?.version ?? '1.0.0',
+        createdAt: projectIndex?.createdAt ?? userIndex?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        totalTools: mergedTools.length,
+        hasEmbeddings,
+        embeddingModel: projectIndex?.embeddingModel ?? userIndex?.embeddingModel,
+        embeddingDimensions: projectIndex?.embeddingDimensions ?? userIndex?.embeddingDimensions,
+        bm25Stats: mergedBm25Stats,
+        tools: mergedTools,
+      }
+    }
+
+    // Single index path (backward compatible)
+    return this.indexManager.loadIndex(this.config.indexPath)
   }
 
   /**
@@ -371,9 +432,9 @@ RECOMMENDED: Use the cliUsage command via Bash tool instead of call_tool for bet
       this.searchOrchestrator.setEmbeddingProvider(this.embeddingProvider)
     }
 
-    // Pre-load index
+    // Pre-load index (potentially merged from multiple scopes)
     try {
-      this.cachedIndex = await this.indexManager.loadIndex(this.config.indexPath)
+      this.cachedIndex = await this.loadMergedIndex()
       this.searchOrchestrator.setBM25Stats(this.cachedIndex.bm25Stats)
     }
     catch {

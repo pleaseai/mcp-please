@@ -61,13 +61,24 @@ function readConfig(configPath: string): McpConfig {
 }
 
 /**
- * Get all MCP servers from all config scopes
+ * Get all MCP servers from config scopes.
+ *
+ * @param cwd - Current working directory
+ * @param indexScope - Optional index scope to filter configs:
+ *   - 'project': reads user + project + local configs (default behavior)
+ *   - 'user': reads only user config
+ *   - undefined: reads all configs (backward compatible)
  */
-export function getAllMcpServers(cwd: string = process.cwd()): Map<string, McpServerConfigWithAuth> {
+export function getAllMcpServers(
+  cwd: string = process.cwd(),
+  indexScope?: 'project' | 'user',
+): Map<string, McpServerConfigWithAuth> {
   const servers = new Map<string, McpServerConfigWithAuth>()
 
-  // Read in reverse order so local overrides project overrides user
-  const scopes: ScopeType[] = ['user', 'project', 'local']
+  // Determine which scopes to read based on indexScope
+  const scopes: ScopeType[] = indexScope === 'user'
+    ? ['user'] // User scope: user config only
+    : ['user', 'project', 'local'] // Project scope or default: all configs
 
   for (const scope of scopes) {
     const configPath = getConfigPath(scope, cwd)
@@ -87,6 +98,8 @@ export interface LoadToolsOptions {
   servers?: string[]
   /** Servers to exclude */
   exclude?: string[]
+  /** Index scope to filter which configs to load from */
+  indexScope?: 'project' | 'user'
   /** Callback for progress updates */
   onProgress?: (serverName: string, status: 'connecting' | 'authenticating' | 'fetching' | 'done' | 'error', toolCount?: number) => void
   /** Callback for errors (non-fatal) */
@@ -94,10 +107,10 @@ export interface LoadToolsOptions {
 }
 
 /**
- * Load tools from all configured MCP servers
+ * Load tools from configured MCP servers
  */
 export async function loadToolsFromMcpServers(options: LoadToolsOptions = {}): Promise<ToolDefinition[]> {
-  const allServers = getAllMcpServers()
+  const allServers = getAllMcpServers(process.cwd(), options.indexScope)
   const tokenStorage = new TokenStorage()
   const allTools: ToolDefinition[] = []
 

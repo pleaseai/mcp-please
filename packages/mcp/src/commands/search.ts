@@ -1,4 +1,5 @@
-import type { EmbeddingProviderType, SearchMode } from '@pleaseai/mcp-core'
+import type { EmbeddingProviderType, IndexedTool, PersistedIndex, SearchMode } from '@pleaseai/mcp-core'
+import type { CliScope } from '../types/index-scope.js'
 import type { OutputFormat } from '../utils/output.js'
 import process from 'node:process'
 import {
@@ -8,8 +9,10 @@ import {
 } from '@pleaseai/mcp-core'
 import { Command } from 'commander'
 import ora from 'ora'
-import { DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE, DEFAULT_TOP_K } from '../constants.js'
-import { error, formatSearchResults } from '../utils/output.js'
+import { DEFAULT_CLI_SCOPE, DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFAULT_SEARCH_MODE, DEFAULT_TOP_K } from '../constants.js'
+import { getIndexPath } from '../utils/index-paths.js'
+import { error, formatSearchResults, info } from '../utils/output.js'
+import { mergeBM25Stats, mergeIndexedTools } from '../utils/tool-deduplication.js'
 
 /**
  * Create the search command
@@ -28,6 +31,7 @@ export function createSearchCommand(): Command {
       'Embedding provider for semantic search: local:minilm | local:mdbr-leaf | api:openai | api:voyage',
       DEFAULT_EMBEDDING_PROVIDER,
     )
+    .option('-s, --scope <scope>', 'Search scope: project | user | all', DEFAULT_CLI_SCOPE)
     .action(async (query: string, options) => {
       const spinner = ora('Loading index...').start()
 
@@ -36,10 +40,79 @@ export function createSearchCommand(): Command {
         const topK = Number.parseInt(options.topK, 10)
         const threshold = Number.parseFloat(options.threshold)
         const format = options.format as OutputFormat
+        const scope = options.scope as CliScope
 
-        // Load index
+        // Validate scope option
+        const VALID_SCOPES = ['project', 'user', 'all'] as const
+        if (!VALID_SCOPES.includes(scope)) {
+          spinner.fail(`Invalid scope: "${scope}"`)
+          error(`Valid options: ${VALID_SCOPES.join(', ')}`)
+          process.exit(1)
+        }
+
+        // Load index(es) based on scope
         const indexManager = new IndexManager()
-        const index = await indexManager.loadIndex(options.index)
+        let tools: IndexedTool[]
+        let bm25Stats: { avgDocLength: number, documentFrequencies: Record<string, number>, totalDocuments: number }
+        let hasEmbeddings = false
+
+        // If a custom index path is provided, use it directly (ignore scope)
+        const customIndexPath = options.index !== DEFAULT_INDEX_PATH ? options.index : null
+
+        if (customIndexPath) {
+          // User provided explicit path - use it directly
+          const index = await indexManager.loadIndex(customIndexPath)
+          tools = index.tools
+          bm25Stats = index.bm25Stats
+          hasEmbeddings = index.hasEmbeddings
+        }
+        else if (scope === 'all') {
+          // Load both indexes and merge
+          const projectPath = getIndexPath('project')
+          const userPath = getIndexPath('user')
+
+          let projectIndex: PersistedIndex | null = null
+          let userIndex: PersistedIndex | null = null
+
+          try {
+            projectIndex = await indexManager.loadIndex(projectPath)
+          }
+          catch {
+            // Project index doesn't exist
+          }
+
+          try {
+            userIndex = await indexManager.loadIndex(userPath)
+          }
+          catch {
+            // User index doesn't exist
+          }
+
+          if (!projectIndex && !userIndex) {
+            spinner.fail('No indexes found. Create an index first with: mcp-gateway index')
+            process.exit(1)
+          }
+
+          tools = mergeIndexedTools(projectIndex, userIndex)
+          bm25Stats = mergeBM25Stats(projectIndex, userIndex)
+          hasEmbeddings = (projectIndex?.hasEmbeddings ?? false) || (userIndex?.hasEmbeddings ?? false)
+
+          const scopeInfo = []
+          if (projectIndex)
+            scopeInfo.push(`project: ${projectIndex.tools.length}`)
+          if (userIndex)
+            scopeInfo.push(`user: ${userIndex.tools.length}`)
+          info(`Loaded indexes: ${scopeInfo.join(', ')} → ${tools.length} unique tools`)
+        }
+        else {
+          // Load single scope
+          const indexPath = getIndexPath(scope)
+
+          const index = await indexManager.loadIndex(indexPath)
+          tools = index.tools
+          bm25Stats = index.bm25Stats
+          hasEmbeddings = index.hasEmbeddings
+        }
 
         // Create search orchestrator
         const orchestrator = new SearchOrchestrator({
@@ -48,11 +121,11 @@ export function createSearchCommand(): Command {
         })
 
         // Set BM25 stats
-        orchestrator.setBM25Stats(index.bm25Stats)
+        orchestrator.setBM25Stats(bm25Stats)
 
         // Setup embedding provider for semantic search (embedding and hybrid modes)
         if (mode === 'embedding' || mode === 'hybrid') {
-          if (!index.hasEmbeddings) {
+          if (!hasEmbeddings) {
             spinner.fail('Index does not contain embeddings. Re-index with embeddings enabled.')
             process.exit(1)
           }
@@ -78,7 +151,7 @@ export function createSearchCommand(): Command {
             topK,
             threshold: threshold > 0 ? threshold : undefined,
           },
-          index.tools,
+          tools,
         )
 
         spinner.stop()

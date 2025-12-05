@@ -6,7 +6,7 @@
 import type { PersistedIndex } from '@pleaseai/mcp-core'
 import { existsSync } from 'node:fs'
 import { IndexStorage } from '@pleaseai/mcp-core'
-import { createAllConfigFingerprints, getCliVersion } from './config-fingerprint.js'
+import { createAllConfigFingerprints, getCliVersion, getConfigFingerprintsForScope } from './config-fingerprint.js'
 
 export interface RegenerationResult {
   needsRebuild: boolean
@@ -20,6 +20,12 @@ export interface CurrentArgs {
   exclude?: string[]
 }
 
+export interface RegenerationOptions {
+  cwd?: string
+  /** Index scope for scope-aware fingerprint checking */
+  scope?: 'project' | 'user'
+}
+
 /**
  * Check if the index needs to be regenerated
  *
@@ -30,12 +36,21 @@ export interface CurrentArgs {
  * 4. CLI version changed
  * 5. CLI args changed (mode, provider, dtype, exclude)
  * 6. Config file added/removed/modified
+ *
+ * @param indexPath - Path to the index file
+ * @param currentArgs - Current CLI arguments
+ * @param optionsOrCwd - Either a RegenerationOptions object or a cwd string (backward compatible)
  */
 export async function checkIndexRegeneration(
   indexPath: string,
   currentArgs: CurrentArgs,
-  cwd?: string,
+  optionsOrCwd?: RegenerationOptions | string,
 ): Promise<RegenerationResult> {
+  // Handle backward compatibility: third arg can be string (cwd) or options object
+  const options: RegenerationOptions | undefined = typeof optionsOrCwd === 'string'
+    ? { cwd: optionsOrCwd }
+    : optionsOrCwd
+
   const reasons: string[] = []
 
   // Condition 1: Index file missing
@@ -90,7 +105,10 @@ export async function checkIndexRegeneration(
   }
 
   // Condition 6: Config files changed
-  const currentFingerprints = createAllConfigFingerprints(cwd)
+  // Use scope-aware fingerprints if scope is specified
+  const currentFingerprints = options?.scope
+    ? getConfigFingerprintsForScope(options.scope, options?.cwd)
+    : createAllConfigFingerprints(options?.cwd)
   const storedFingerprints = index.buildMetadata.configFingerprints
 
   for (const scope of ['local', 'project', 'user'] as const) {

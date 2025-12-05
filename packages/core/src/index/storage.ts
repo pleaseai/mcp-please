@@ -20,6 +20,8 @@ export interface BuildMetadata {
     provider?: string
     dtype?: string
     exclude?: string[]
+    /** Index scope (project or user) */
+    scope?: string
   }
   configFingerprints: {
     local?: ConfigFingerprint
