@@ -38,8 +38,7 @@ mcp-gateway/
 
 - **MCP Server**: Full MCP protocol implementation with:
   - `search_tools` - Search indexed tools
-  - `get_tool` - Get detailed tool schema
-  - `call_tool` - Execute tools on source MCP servers
+  - `get_tool` - Get detailed tool schema with CLI usage template
   - `tool_search_info` / `list_tools` - Index metadata
 
 - **IDE Integration**: Install command for multiple IDEs
@@ -291,8 +290,7 @@ CLI + MCP server exposing:
 
 MCP tools:
 - `search_tools` - Search with query, mode, top_k, threshold
-- `get_tool` - Get detailed tool schema and metadata
-- `call_tool` - Execute tool on source MCP server
+- `get_tool` - Get detailed tool schema, metadata, and CLI usage template
 - `tool_search_info` - Get index metadata
 - `list_tools` - List all indexed tools with pagination
 
@@ -310,7 +308,7 @@ Search for tools using regex, BM25, or semantic search. Returns matching tools r
 
 ### `get_tool`
 
-Get detailed information about a specific tool including its input schema.
+Get detailed information about a specific tool including its input schema and CLI usage template.
 
 **Parameters:**
 - `name` (string, required): Tool name from search results
@@ -321,16 +319,16 @@ Get detailed information about a specific tool including its input schema.
 - `requiredFields`: Array of required parameter names
 - `parameters`: Array of all parameters with name, type, required flag, and description
 - `inputSchema`: Complete JSON Schema for validation
+- `cliUsage`: CLI command template for executing via Bash tool
 
-### `call_tool`
+**Recommended Workflow:** `search_tools` → `get_tool` → (use `cliUsage` via Bash tool)
 
-Execute a tool on its source MCP server.
-
-**Parameters:**
-- `name` (string, required): Tool name from search/get results
-- `arguments` (object, optional): Arguments matching the tool's inputSchema
-
-**Workflow:** `search_tools` → `get_tool` → `call_tool`
+> **Why CLI instead of MCP `call_tool`?**
+>
+> Using the CLI via Bash tool enables proper permission checks by the host application (e.g., Claude Code).
+> When tools are executed through the CLI, the host can verify user consent before running potentially
+> sensitive operations. Direct MCP `call_tool` bypasses these permission checks, which may be undesirable
+> in environments where user approval is required for tool execution.
 
 ### `tool_search_info`
 
@@ -343,6 +341,23 @@ List all tools in the index with pagination.
 **Parameters:**
 - `limit` (number, optional): Maximum tools to return (default: 100)
 - `offset` (number, optional): Pagination offset (default: 0)
+
+### Call Tool via CLI
+
+Execute discovered tools using the CLI command provided by `get_tool`:
+
+```bash
+# Basic usage (command template from get_tool response)
+mcp-gateway call <server>__<tool> --param1 "value1" --param2 "value2"
+
+# Example: Call a file read tool
+mcp-gateway call filesystem__read_file --path "/tmp/example.txt"
+
+# With JSON arguments for complex parameters
+mcp-gateway call myserver__create_item --data '{"name": "test", "count": 5}'
+```
+
+The `cliUsage` field in `get_tool` response provides a ready-to-use command template.
 
 ## OAuth Authentication
 
