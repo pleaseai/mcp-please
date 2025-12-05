@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/pleaseai/mcp-gateway/graph/badge.svg)](https://codecov.io/gh/pleaseai/mcp-gateway)
 [![code style](https://antfu.me/badge-code-style.svg)](https://github.com/antfu/eslint-config)
 
-MCP server and CLI for searching MCP tools using **regex**, **BM25**, or **semantic (embedding)** search.
+MCP server and CLI for searching MCP tools using **regex**, **BM25**, **semantic (embedding)**, or **hybrid** search.
 
 ## Monorepo Structure
 
@@ -24,6 +24,7 @@ mcp-gateway/
   - **Regex**: Pattern matching on tool names and descriptions
   - **BM25**: Traditional text search ranking algorithm
   - **Embedding**: Semantic search using vector similarity
+  - **Hybrid**: Combined BM25 + Embedding with Reciprocal Rank Fusion (RRF)
 
 - **Configurable Embedding Providers**:
   - **local:minilm**: all-MiniLM-L6-v2 via transformers.js (384 dims, no API key required)
@@ -139,6 +140,9 @@ npx @pleaseai/mcp-gateway search "read.*file" --mode regex
 
 # Semantic search
 npx @pleaseai/mcp-gateway search "tools for sending messages" --mode embedding
+
+# Hybrid search (BM25 + Embedding with RRF)
+npx @pleaseai/mcp-gateway search "file management tools" --mode hybrid
 
 # Limit results
 npx @pleaseai/mcp-gateway search "database" -k 5
@@ -275,7 +279,7 @@ bun run clean
 ### @pleaseai/mcp-core
 
 Core search engine with:
-- Search strategies (Regex, BM25, Embedding)
+- Search strategies (Regex, BM25, Embedding, Hybrid)
 - Embedding providers (Local MiniLM, Local MDBR-Leaf, OpenAI, Voyage AI)
 - Index management (loader, builder, storage)
 
@@ -298,11 +302,11 @@ MCP tools:
 
 ### `search_tools`
 
-Search for tools using regex, BM25, or semantic search. Returns matching tools ranked by relevance.
+Search for tools using regex, BM25, semantic, or hybrid search. Returns matching tools ranked by relevance.
 
 **Parameters:**
 - `query` (string, required): Search query string
-- `mode` (string, optional): Search mode - `regex`, `bm25`, or `embedding` (default: `bm25`)
+- `mode` (string, optional): Search mode - `regex`, `bm25`, `embedding`, or `hybrid` (default: `bm25`)
 - `top_k` (number, optional): Maximum results to return (default: 10)
 - `threshold` (number, optional): Minimum score threshold 0-1 (default: 0)
 
