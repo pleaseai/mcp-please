@@ -19,7 +19,7 @@ describe('cli-usage', () => {
 
       const usage = generateCliUsage(tool)
 
-      expect(usage).toBe('npx @pleaseai/mcp-gateway server__read_file --args \'{"path":"<string>"}\'')
+      expect(usage).toBe('npx @pleaseai/mcp-gateway@beta server__read_file --args \'{"path":"<string>"}\'')
     })
 
     test('should generate usage for tool with multiple required fields', () => {
@@ -38,6 +38,7 @@ describe('cli-usage', () => {
 
       const usage = generateCliUsage(tool)
 
+      expect(usage).toContain('@pleaseai/mcp-gateway@beta')
       expect(usage).toContain('server__write_file')
       expect(usage).toContain('"path":"<string>"')
       expect(usage).toContain('"content":"<string>"')
@@ -114,7 +115,7 @@ describe('cli-usage', () => {
 
       const usage = generateCliUsage(tool)
 
-      expect(usage).toBe('npx @pleaseai/mcp-gateway server__list --args \'{}\'')
+      expect(usage).toBe('npx @pleaseai/mcp-gateway@beta server__list --args \'{}\'')
     })
 
     test('should truncate long enum lists', () => {
@@ -158,7 +159,7 @@ describe('cli-usage', () => {
       expect(argsExample).toContain('--args')
       expect(stdinExample).toContain('echo')
       expect(stdinExample).toContain('|')
-      expect(stdinExample).toContain('npx @pleaseai/mcp-gateway')
+      expect(stdinExample).toContain('npx @pleaseai/mcp-gateway@beta')
     })
   })
 })

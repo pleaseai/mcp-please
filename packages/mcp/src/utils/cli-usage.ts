@@ -6,6 +6,11 @@
 import type { ToolDefinition } from '@pleaseai/mcp-core'
 
 /**
+ * Package specifier for CLI usage commands
+ */
+const MCP_GATEWAY_PACKAGE = '@pleaseai/mcp-gateway@beta'
+
+/**
  * Valid JSON Schema types
  */
 type JsonSchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null'
@@ -57,7 +62,7 @@ export function generateCliUsage(tool: ToolDefinition): string {
     : '{}'
 
   // Direct tool execution format enables permission patterns like: Bash(mcp-gateway server__*:*)
-  return `npx @pleaseai/mcp-gateway ${tool.name} --args '${argsJson}'`
+  return `npx ${MCP_GATEWAY_PACKAGE} ${tool.name} --args '${argsJson}'`
 }
 
 /**
@@ -107,7 +112,7 @@ export function generateDetailedCliUsage(tool: ToolDefinition): {
     ? JSON.stringify(exampleArgs, null, 2)
     : '{}'
 
-  const stdinExample = `echo '${argsJson}' | npx @pleaseai/mcp-gateway ${tool.name}`
+  const stdinExample = `echo '${argsJson}' | npx ${MCP_GATEWAY_PACKAGE} ${tool.name}`
 
   return { argsExample, stdinExample }
 }
