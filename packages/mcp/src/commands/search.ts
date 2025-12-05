@@ -13,7 +13,7 @@ import { DEFAULT_CLI_SCOPE, DEFAULT_EMBEDDING_PROVIDER, DEFAULT_INDEX_PATH, DEFA
 import { CLI_SCOPES, isCliScope } from '../types/index-scope.js'
 import { getIndexPath } from '../utils/index-paths.js'
 import { error, formatSearchResults, info, warn } from '../utils/output.js'
-import { hasAnyEmbeddings, mergeIndexedTools, selectBM25Stats } from '../utils/tool-deduplication.js'
+import { hasAnyEmbeddings, mergeBM25Stats, mergeIndexedTools } from '../utils/tool-deduplication.js'
 
 /**
  * Check if an error indicates the file does not exist (ENOENT)
@@ -117,7 +117,7 @@ export function createSearchCommand(): Command {
           }
 
           tools = mergeIndexedTools(projectIndex, userIndex)
-          bm25Stats = selectBM25Stats(projectIndex, userIndex)
+          bm25Stats = mergeBM25Stats(projectIndex, userIndex)
           hasEmbeddings = hasAnyEmbeddings(projectIndex, userIndex)
 
           const scopeInfo = []

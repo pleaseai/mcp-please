@@ -49,30 +49,47 @@ export function mergeIndexedTools(
 }
 
 /**
- * Select BM25 stats from available indexes.
- * Uses project stats if available, otherwise falls back to user stats.
- * Does not combine statistics from both sources.
+ * Merge BM25 stats from multiple indexes.
+ * Combines totalDocuments, avgDocLength, and documentFrequencies for accurate
+ * BM25 search scores when searching across both project and user scopes.
  *
  * @param projectIndex - Project-level index (can be null)
  * @param userIndex - User-level index (can be null)
- * @returns Selected BM25Stats or default empty stats
+ * @returns Merged BM25Stats or default empty stats
  */
-export function selectBM25Stats(
+export function mergeBM25Stats(
   projectIndex: PersistedIndex | null,
   userIndex: PersistedIndex | null,
 ): { avgDocLength: number, documentFrequencies: Record<string, number>, totalDocuments: number } {
-  // Prefer project stats, fall back to user stats
-  const baseStats = projectIndex?.bm25Stats ?? userIndex?.bm25Stats
+  const pStats = projectIndex?.bm25Stats
+  const uStats = userIndex?.bm25Stats
 
-  if (!baseStats) {
-    return {
-      avgDocLength: 0,
-      documentFrequencies: {},
-      totalDocuments: 0,
-    }
+  if (!pStats && !uStats) {
+    return { avgDocLength: 0, documentFrequencies: {}, totalDocuments: 0 }
+  }
+  if (!pStats) {
+    return uStats!
+  }
+  if (!uStats) {
+    return pStats
   }
 
-  return baseStats
+  // Combine statistics from both indexes
+  const totalDocuments = pStats.totalDocuments + uStats.totalDocuments
+  const totalLength = pStats.avgDocLength * pStats.totalDocuments + uStats.avgDocLength * uStats.totalDocuments
+  const avgDocLength = totalDocuments > 0 ? totalLength / totalDocuments : 0
+
+  // Merge document frequencies
+  const documentFrequencies: Record<string, number> = { ...pStats.documentFrequencies }
+  for (const [term, freq] of Object.entries(uStats.documentFrequencies)) {
+    documentFrequencies[term] = (documentFrequencies[term] || 0) + freq
+  }
+
+  return {
+    totalDocuments,
+    avgDocLength,
+    documentFrequencies,
+  }
 }
 
 /**

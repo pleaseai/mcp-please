@@ -10,7 +10,7 @@ import {
 import { z } from 'zod'
 import { createToolExecutor } from './services/tool-executor.js'
 import { generateCliUsage } from './utils/cli-usage.js'
-import { hasAnyEmbeddings, mergeIndexedTools, selectBM25Stats } from './utils/tool-deduplication.js'
+import { hasAnyEmbeddings, mergeBM25Stats, mergeIndexedTools } from './utils/tool-deduplication.js'
 
 /**
  * Extended server config with multi-index support
@@ -137,7 +137,7 @@ export class McpToolSearchServer {
 
       // Merge tools with project taking priority
       const mergedTools = mergeIndexedTools(projectIndex, userIndex)
-      const selectedBm25Stats = selectBM25Stats(projectIndex, userIndex)
+      const mergedBm25Stats = mergeBM25Stats(projectIndex, userIndex)
       const hasEmbeddings = hasAnyEmbeddings(projectIndex, userIndex)
 
       // Return synthetic merged index
@@ -149,7 +149,7 @@ export class McpToolSearchServer {
         hasEmbeddings,
         embeddingModel: projectIndex?.embeddingModel ?? userIndex?.embeddingModel,
         embeddingDimensions: projectIndex?.embeddingDimensions ?? userIndex?.embeddingDimensions,
-        bm25Stats: selectedBm25Stats,
+        bm25Stats: mergedBm25Stats,
         tools: mergedTools,
       }
     }
