@@ -29,6 +29,9 @@ export interface CurrentArgs {
  * 4. CLI version changed
  * 5. CLI args changed (mode, provider, dtype)
  * 6. Config file added/removed/modified
+ *
+ * Note: The `exclude` option is only available in `index` command.
+ * If you need to change which servers are excluded, run `mcp-gateway index` manually.
  */
 export async function checkIndexRegeneration(
   indexPath: string,
@@ -49,9 +52,10 @@ export async function checkIndexRegeneration(
   try {
     index = await storage.load(indexPath)
   }
-  catch {
-    // Condition 2: Index corrupted or invalid
-    return { needsRebuild: true, reasons: ['Index file corrupted or invalid'] }
+  catch (err) {
+    // Condition 2: Index corrupted or invalid - include actual error for debugging
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    return { needsRebuild: true, reasons: [`Index file corrupted or invalid: ${errorMessage}`] }
   }
 
   // Condition 3: Legacy index without build metadata
@@ -93,7 +97,8 @@ export async function checkIndexRegeneration(
     if (currentExists !== storedExists) {
       reasons.push(`Config ${scope}: ${storedExists ? 'removed' : 'added'}`)
     }
-    else if (currentExists && storedExists && current?.hash !== stored?.hash) {
+    else if (current?.exists && stored?.exists && current.hash !== stored.hash) {
+      // Both exist - compare hashes (TypeScript now knows hash is defined due to discriminated union)
       reasons.push(`Config ${scope}: content changed`)
     }
   }

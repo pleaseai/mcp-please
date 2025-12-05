@@ -3,13 +3,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 /**
- * Configuration file fingerprint for change detection
+ * Configuration file fingerprint for change detection.
+ * Used to detect when config files have been added, removed, or modified.
  */
-export interface ConfigFingerprint {
-  exists: boolean
-  hash?: string // SHA-256 of file content
-  mtime?: number // File modification time (ms)
-}
+export type ConfigFingerprint
+  = | { exists: false }
+    | { exists: true, hash: string }
 
 /**
  * Build metadata for index regeneration detection
